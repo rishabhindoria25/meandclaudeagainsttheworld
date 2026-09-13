@@ -1,0 +1,12 @@
+{
+  "name": "zephyr-ac-remote",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Software remote for a GE room air conditioner: ESP32 IR bridge, web remote, simulator.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "sim": "node tools/simulator/server.mjs",
+    "test": "node --test tools/test/*.test.mjs"
+  }
+}

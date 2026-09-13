@@ -1,0 +1,53 @@
+# ESPHome config for a GE room air conditioner, once you already know the
+# protocol. See README.md in this directory for the trade-offs.
+#
+# Wiring matches docs/HARDWARE.md: IR LED on GPIO4 behind a transistor,
+# optional TSOP38238 on GPIO14.
+
+esphome:
+  name: bedroom-ac
+  friendly_name: Bedroom Air Conditioner
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Bedroom AC Setup"
+
+logger:
+api:
+ota:
+  - platform: esphome
+
+remote_transmitter:
+  pin: GPIO4
+  # A/C receivers expect a 38 kHz carrier at roughly 1/3 duty.
+  carrier_duty_percent: 33%
+
+# Optional: lets ESPHome learn codes from a remote, if you ever have one.
+remote_receiver:
+  pin:
+    number: GPIO14
+    inverted: true
+  dump: all
+
+climate:
+  # Replace `coolix` with the platform matching the protocol the wizard found.
+  # The unit is cooling-only, so heat is disabled.
+  - platform: coolix
+    name: "Bedroom A/C"
+    supports_heat: false
+    supports_cool: true
+    # Feed in room temperature from any sensor you already have.
+    sensor: room_temperature
+
+sensor:
+  - platform: homeassistant
+    id: room_temperature
+    entity_id: sensor.bedroom_temperature
+    internal: true

@@ -1,0 +1,160 @@
+{
+  "$comment": "Generated from shared/ac-model.mjs. Ranked IR protocol candidates for GE-badged room air conditioners; see docs/PROTOCOL.md for the reasoning behind the order.",
+  "target": {
+    "brand": "GE",
+    "family": "room air conditioner (window / through-the-wall), electronic control",
+    "panel": [
+      "2-digit LED display",
+      "Cool / Energy Saver / Fan Only",
+      "High / Med / Low fan",
+      "Delay Hrs timer",
+      "Reset Filter"
+    ],
+    "temperatureUnit": "F",
+    "temperatureRange": [
+      60,
+      86
+    ],
+    "modes": [
+      "cool",
+      "eco",
+      "fan",
+      "dry"
+    ],
+    "fanSpeeds": [
+      "auto",
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "library": "IRremoteESP8266 decode_type_t / IRac::sendAc()",
+  "candidates": [
+    {
+      "rank": 1,
+      "protocol": "COOLIX",
+      "model": -1,
+      "oem": "Midea / GD Midea",
+      "note": "Most common in GE AEM/AHM/AEW room A/Cs. Try first."
+    },
+    {
+      "rank": 2,
+      "protocol": "MIDEA",
+      "model": -1,
+      "oem": "Midea (48-bit)",
+      "note": "Newer Midea-built GE units."
+    },
+    {
+      "rank": 3,
+      "protocol": "LG2",
+      "model": -1,
+      "oem": "LG",
+      "note": "GE AG-series and some wall sleeves."
+    },
+    {
+      "rank": 4,
+      "protocol": "LG",
+      "model": -1,
+      "oem": "LG (older)",
+      "note": "Older LG-built GE chassis."
+    },
+    {
+      "rank": 5,
+      "protocol": "SAMSUNG_AC",
+      "model": -1,
+      "oem": "Samsung",
+      "note": "GE units with Samsung compressors."
+    },
+    {
+      "rank": 6,
+      "protocol": "HAIER_AC",
+      "model": -1,
+      "oem": "Haier",
+      "note": "Haier built GE appliances after 2016."
+    },
+    {
+      "rank": 7,
+      "protocol": "HAIER_AC_YRW02",
+      "model": -1,
+      "oem": "Haier (YR-W02 remote)",
+      "note": "Later Haier remote revision."
+    },
+    {
+      "rank": 8,
+      "protocol": "GREE",
+      "model": -1,
+      "oem": "Gree",
+      "note": "Common white-label Chinese chassis."
+    },
+    {
+      "rank": 9,
+      "protocol": "TCL112AC",
+      "model": -1,
+      "oem": "TCL",
+      "note": "TCL-built units."
+    },
+    {
+      "rank": 10,
+      "protocol": "ELECTRA_AC",
+      "model": -1,
+      "oem": "Electra / Frigidaire family",
+      "note": "Shared platform with several US brands."
+    },
+    {
+      "rank": 11,
+      "protocol": "WHIRLPOOL_AC",
+      "model": -1,
+      "oem": "Whirlpool",
+      "note": "Less common but present."
+    },
+    {
+      "rank": 12,
+      "protocol": "CARRIER_AC",
+      "model": -1,
+      "oem": "Carrier",
+      "note": "Carrier-built sleeve units."
+    },
+    {
+      "rank": 13,
+      "protocol": "CARRIER_AC128",
+      "model": -1,
+      "oem": "Carrier (128-bit)",
+      "note": "Newer Carrier revision."
+    },
+    {
+      "rank": 14,
+      "protocol": "GOODWEATHER",
+      "model": -1,
+      "oem": "Generic (ZH/JT-03 remote)",
+      "note": "Generic far-east remote, wide compatibility."
+    },
+    {
+      "rank": 15,
+      "protocol": "AIRWELL",
+      "model": -1,
+      "oem": "Airwell",
+      "note": "Long-shot fallback."
+    },
+    {
+      "rank": 16,
+      "protocol": "TECO",
+      "model": -1,
+      "oem": "Teco",
+      "note": "Long-shot fallback."
+    },
+    {
+      "rank": 17,
+      "protocol": "HITACHI_AC",
+      "model": -1,
+      "oem": "Hitachi",
+      "note": "Long-shot fallback."
+    },
+    {
+      "rank": 18,
+      "protocol": "DELONGHI_AC",
+      "model": -1,
+      "oem": "DeLonghi",
+      "note": "Long-shot fallback."
+    }
+  ]
+}
