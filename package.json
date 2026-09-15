@@ -1,0 +1,26 @@
+{
+  "name": "talking-tom-therapist",
+  "version": "1.0.0",
+  "description": "A voice-first animated therapeutic companion built on evidence-based psychotherapy process research. Runs entirely in the browser; no data leaves the device.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server/dev-server.js",
+    "test": "node --test",
+    "test:watch": "node --test --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "psychotherapy",
+    "cbt",
+    "motivational-interviewing",
+    "act",
+    "dbt",
+    "voice",
+    "animation",
+    "accessibility"
+  ],
+  "private": true
+}

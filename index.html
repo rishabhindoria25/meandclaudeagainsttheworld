@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A voice-first animated companion built on evidence-based psychotherapy process research. Runs entirely on your device.">
+<title>Tom — a cat who listens</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
+<link rel="stylesheet" href="./src/app.css">
+</head>
+<body>
+
+<a class="skip-link" href="#composer">Skip to the message box</a>
+
+<div id="app" class="app" data-state="intro">
+
+  <!-- ─── First-run disclosure ─────────────────────────────────────── -->
+  <dialog id="disclosure" class="sheet" aria-labelledby="disclosure-title">
+    <div class="sheet__body">
+      <div class="sheet__mark" aria-hidden="true">🐱</div>
+      <h1 id="disclosure-title">Before we start</h1>
+      <ul id="disclosure-points" class="disclosure-list"></ul>
+      <div class="sheet__region">
+        <label for="region-select">Where are you? This sets which crisis numbers Tom shows.</label>
+        <select id="region-select"></select>
+      </div>
+      <div class="sheet__actions">
+        <button id="disclosure-accept" class="btn btn--primary" type="button">I understand — let's begin</button>
+        <a class="btn btn--quiet" href="#help-now">I need help right now</a>
+      </div>
+      <p class="sheet__fine">Tom is not a therapist and this is not treatment. If you are in danger, contact your local emergency services.</p>
+    </div>
+  </dialog>
+
+  <!-- ─── Crisis banner ────────────────────────────────────────────── -->
+  <aside id="crisis-banner" class="crisis" hidden aria-live="polite">
+    <div class="crisis__head">
+      <strong id="crisis-title">If you need a person right now</strong>
+      <button id="crisis-close" class="icon-btn" type="button" aria-label="Hide crisis numbers">✕</button>
+    </div>
+    <ul id="crisis-lines" class="crisis__lines"></ul>
+    <p class="crisis__note">Tom is a program. He cannot call anyone for you.</p>
+  </aside>
+
+  <!-- ─── Header ───────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar__id">
+      <span class="topbar__mark" aria-hidden="true">🐱</span>
+      <span class="topbar__name">Tom</span>
+      <span class="badge badge--privacy" title="Nothing you say is sent anywhere. Everything stays in this browser.">On this device only</span>
+    </div>
+    <div class="topbar__tools">
+      <button id="toggle-voice" class="chip" type="button" aria-pressed="true">
+        <span aria-hidden="true">🔊</span> <span class="chip__label">Tom's voice</span>
+      </button>
+      <button id="toggle-why" class="chip" type="button" aria-pressed="false" aria-controls="why-panel">
+        <span aria-hidden="true">🔍</span> <span class="chip__label">Why he said that</span>
+      </button>
+      <button id="toggle-settings" class="chip" type="button" aria-pressed="false" aria-controls="settings-panel">
+        <span aria-hidden="true">⚙</span> <span class="chip__label">Settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Stage ────────────────────────────────────────────────────── -->
+  <main class="stage">
+    <div class="stage__cat">
+      <div id="tom-mount" class="cat"></div>
+      <div id="tom-status" class="cat__status" aria-live="polite">Listening</div>
+    </div>
+
+    <section class="conversation" aria-label="Conversation">
+      <div id="transcript" class="transcript" role="log" aria-live="polite" aria-relevant="additions text" tabindex="0"></div>
+
+      <div id="interim" class="interim" hidden aria-live="off"></div>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <button id="mic" class="mic" type="button" aria-pressed="false" aria-label="Talk to Tom">
+          <span class="mic__icon" aria-hidden="true">🎙</span>
+          <span class="mic__ring" aria-hidden="true"></span>
+        </button>
+        <label class="sr-only" for="say">What would you like to say?</label>
+        <textarea id="say" class="composer__input" rows="1" placeholder="Say it however it comes out…" enterkeyhint="send"></textarea>
+        <button id="send" class="btn btn--send" type="submit">Send</button>
+      </form>
+
+      <div id="quick" class="quick" hidden></div>
+    </section>
+  </main>
+
+  <!-- ─── Why panel ────────────────────────────────────────────────── -->
+  <aside id="why-panel" class="panel" hidden aria-label="Why Tom said that">
+    <div class="panel__head">
+      <h2>Why he said that</h2>
+      <button class="icon-btn" type="button" data-close="why-panel" aria-label="Close">✕</button>
+    </div>
+    <div class="panel__body">
+      <p class="panel__intro">Tom shows his working. Nothing here is hidden from you, because a tool that reasons about your feelings should be one you can audit.</p>
+      <dl id="why-content" class="why"></dl>
+      <div class="fidelity">
+        <h3>Session fidelity</h3>
+        <p class="fidelity__intro">Measures from motivational interviewing’s own fidelity coding, applied to Tom in real time.</p>
+        <div id="fidelity-content" class="fidelity__grid"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Settings panel ───────────────────────────────────────────── -->
+  <aside id="settings-panel" class="panel" hidden aria-label="Settings and your data">
+    <div class="panel__head">
+      <h2>Settings</h2>
+      <button class="icon-btn" type="button" data-close="settings-panel" aria-label="Close">✕</button>
+    </div>
+    <div class="panel__body">
+      <section class="setting-group">
+        <h3>Comfort</h3>
+        <label class="switch"><input type="checkbox" id="opt-reduced-motion"> <span>Reduce movement</span></label>
+        <label class="switch"><input type="checkbox" id="opt-contrast"> <span>Higher contrast</span></label>
+        <label class="switch"><input type="checkbox" id="opt-captions" checked> <span>Always show captions</span></label>
+        <label class="switch"><input type="checkbox" id="opt-voice-in" checked> <span>Let me talk (microphone)</span></label>
+        <label class="field"><span>Tom's pace</span>
+          <input type="range" id="opt-rate" min="0.7" max="1.25" step="0.05" value="1">
+        </label>
+      </section>
+
+      <section class="setting-group">
+        <h3>Crisis numbers for</h3>
+        <select id="region-setting"></select>
+      </section>
+
+      <section class="setting-group">
+        <h3>Check in on how things are</h3>
+        <p class="hint">Short, well-validated questionnaires. They are screens, not diagnoses, and Tom only offers them — never insists.</p>
+        <div id="measure-buttons" class="row"></div>
+        <div id="measure-history" class="measure-history"></div>
+      </section>
+
+      <section class="setting-group">
+        <h3>Your safety plan</h3>
+        <p class="hint">Built with you, stored only here. Take it to a clinician — that is the step that makes it work.</p>
+        <div class="row">
+          <button id="start-safety-plan" class="btn btn--quiet" type="button">Make one with Tom</button>
+          <button id="export-safety-plan" class="btn btn--quiet" type="button">Export it</button>
+        </div>
+        <pre id="safety-plan-view" class="plan-view" hidden></pre>
+      </section>
+
+      <section class="setting-group setting-group--data">
+        <h3>Your data</h3>
+        <p class="hint">Everything lives in this browser. There is no account, no server, and no one reading it — including us.</p>
+        <div class="row">
+          <button id="export-data" class="btn btn--quiet" type="button">Download everything</button>
+          <button id="erase-data" class="btn btn--danger" type="button">Delete everything</button>
+        </div>
+      </section>
+
+      <section class="setting-group">
+        <h3 id="help-now">Help right now</h3>
+        <ul id="settings-crisis-lines" class="crisis__lines"></ul>
+      </section>
+    </div>
+  </aside>
+
+  <div id="scrim" class="scrim" hidden></div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
