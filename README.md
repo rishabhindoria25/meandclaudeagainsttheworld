@@ -13,7 +13,7 @@ call. Nothing you say leaves your device.
 
 ```bash
 npm start        # http://localhost:8173
-npm test         # 275 tests
+npm test         # 282 tests
 ```
 
 No build step, no dependencies, no binary assets — the purr is synthesised, not
@@ -318,8 +318,19 @@ thing can be switched off in settings.
 
 ## The character
 
-Tom is original artwork: a hand-built SVG rig animated by writing transforms and
-path data every frame. Three layers composite:
+Tom is original artwork — a grey tabby, hand-built as an SVG rig and animated by
+writing transforms and path data every frame.
+
+He is deliberately **not** a copy of any existing commercial character. The
+talking-pet apps of the 2010s own their designs, and reproducing one would be
+infringement. What is borrowed is the generic craft those characters share, and
+which my earlier attempts lacked: gradients rather than flat fills, one
+consistent light source at the upper left, contact shadows where forms overlap,
+and baby-schema proportions — an oversized head, very large eyes low on the
+face, a short muzzle, small rounded limbs. A flat cartoon with an outline reads
+as a doodle no matter how good the proportions are.
+
+Three layers composite:
 
 **Pose** — the emotional target, reached through a critically damped spring so
 expressions arrive with weight and never wobble. Parameters follow FACS where it
@@ -328,7 +339,12 @@ brow lowerer of anger, the upper lid raiser of fear, the cheek raiser that
 separates a real smile from a polite one.
 
 **Idle life** — breathing, blinking, micro-saccades, ear twitches, weight
-shifts. This layer is the whole reason a drawing reads as alive. Blink intervals
+shifts. The eyelids are curved paths whose straight edge rests on the top of the
+eye and whose travel exceeds the eye's height, so a blink actually closes it.
+(They were short rectangles that slid *across* the eye rather than over it,
+leaving the top third open at `eyeOpen: 0` — every blink in the app was wrong,
+and the contented half-closed look was a lid in the wrong place rather than a
+lid. Four tests cover it now.) This layer is the whole reason a drawing reads as alive. Blink intervals
 are drawn from an exponential distribution rather than a fixed period (regular
 blinking is a strong "this is a machine" cue) and cluster into occasional
 doubles, landing at around 13 per minute at rest.
@@ -419,7 +435,7 @@ scroll down to 320px.
 ## Tests
 
 ```bash
-npm test     # 275 tests
+npm test     # 282 tests
 ```
 
 The risk tests are the most important code in the project, and are written
@@ -428,7 +444,8 @@ historical, third-party, figurative and blunt. They assert both directions:
 that a real disclosure is never missed, and that a deadline killing someone is
 never treated as a crisis.
 
-Several tests exist to catch specific bugs found during development — the
+Several tests exist to catch specific bugs found during development — eyelids
+that never closed the eye; the
 farewell pattern that read "I am going to be found out" as goodbye and ended the
 session mid-disclosure; the sequential triage that filed a method disclosure
 under question one; the sticky risk tier that reported an escalation on every
