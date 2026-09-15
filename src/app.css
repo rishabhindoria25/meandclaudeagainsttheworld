@@ -189,7 +189,25 @@ img { max-width: 100%; }
 }
 @media (max-width: 860px) { .cat { max-width: 190px; } }
 
-.cat svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.cat svg {
+  width: 100%; height: 100%; display: block; overflow: visible;
+  /* He is meant to be touched, so the browser must not treat a stroke across
+     him as a scroll. Scoped to the character only. */
+  touch-action: none;
+  cursor: grab;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat svg:active { cursor: grabbing; }
+/* tabindex brings a default focus ring with it; keep the keyboard-only one. */
+.cat svg:focus { outline: none; }
+.cat svg:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 12px; }
+
+.cat__hint {
+  font-size: 12px; color: var(--ink-3); text-align: center;
+  max-width: 28ch; line-height: 1.45;
+}
+@media (hover: none) { .cat__hint[data-pointer="mouse"] { display: none; } }
 
 .cat__status {
   font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;

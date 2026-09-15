@@ -5,16 +5,19 @@ research rather than on vibes. An orange cat sits on your screen, you talk to
 him, and he reflects, asks, and — when it is warranted — offers a structured
 exercise from a specific evidence base and tells you which one and why.
 
+You can also poke him.
+
 Everything runs in your browser. There is no account, no server, and no network
 call. Nothing you say leaves your device.
 
 ```bash
 npm start        # http://localhost:8173
-npm test         # 232 tests
+npm test         # 272 tests
 ```
 
-No build step, no dependencies. The server exists only to give ES modules an
-origin; it serves files and does nothing else.
+No build step, no dependencies, no binary assets — the purr is synthesised, not
+sampled. The server exists only to give ES modules an origin; it serves files
+and does nothing else.
 
 ---
 
@@ -236,6 +239,54 @@ international directory so a wrong guess never leaves someone with nothing.
 
 ---
 
+## Touch
+
+He is a talking cat, so he is touchable, and every region does something
+different. Tap an ear and it flicks. Tap his nose and he sneezes. Pull his tail
+and he grumbles and looks round at you. Rest a hand on him and he slow-blinks,
+which is what cats do to signal they are not worried. Stroke his head and he
+purrs — a real purr, synthesised as a low rumble amplitude-modulated at 25 Hz,
+deepening the longer you keep going and trailing off when you stop. His eyes
+follow your cursor or your finger the whole time.
+
+This earns its place on more than nostalgia:
+
+- **Stroking is a self-soothing behaviour in its own right.** Touch is one of
+  the five senses in DBT's Self-Soothe skill, and a randomised study of 249
+  students found ten minutes of hands-on contact with cats and dogs produced a
+  significant drop in salivary cortisol.
+- **It converts into paced breathing.** After sustained stroking Tom offers:
+  *"try breathing out while you stroke, and in on the way back"*. That is
+  lengthening the exhale — the fastest non-pharmacological way to shift arousal
+  — offered as stroking a cat rather than as an exercise. Someone too wound up
+  to accept a breathing exercise will often accept this.
+- **It gives your hands something to do.** Therapists use this deliberately,
+  from fidget objects to walking sessions. Someone who cannot yet say the
+  sentence can often stroke the cat while they work up to it.
+
+Two rules govern all of it.
+
+**He is never hurt and never sulks.** The original's punch-him-until-he-is-
+knocked-out loop is the one thing deliberately not reproduced. A companion that
+can be damaged puts the burden of care onto someone who came here to be cared
+for. A test asserts the reaction table contains no such thing.
+
+**The comedy stops when risk appears.** Sneezing for laughs mid-disclosure would
+be grotesque, so playful reactions are suppressed at any risk tier. Stroking and
+a resting hand stay available the whole way through, because those are
+regulating rather than funny.
+
+Rough, fast handling is tracked. If someone jabs at him forty times, Tom notices
+once — *"You are giving me a proper going over there. I do not mind at all — is
+something wound up?"* — with curiosity rather than correction, the way a
+therapist notices a leg that will not stop moving. Stroking discharges the
+meter, and he never raises it twice.
+
+Keyboard equivalents throughout (`P` to pet, `N` for his nose), and the whole
+thing can be switched off in settings.
+
+---
+
 ## The character
 
 Tom is original artwork: a hand-built SVG rig animated by writing transforms and
@@ -339,7 +390,7 @@ scroll down to 320px.
 ## Tests
 
 ```bash
-npm test     # 232 tests
+npm test     # 272 tests
 ```
 
 The risk tests are the most important code in the project, and are written
@@ -363,8 +414,15 @@ index.html
 src/
   main.js              turn loop, barge-in, panels, settings
   app.css
-  character/           rig.js · expressions.js · visemes.js · animator.js
+  character/
+    rig.js             the SVG drawing and its parameters
+    expressions.js     FACS-informed poses and gestures
+    visemes.js         text to mouth shapes
+    animator.js        springs, idle life, lip sync, gaze
+    touch.js           hit regions, gesture recognition, agitation
+    reactions.js       what he does when you touch him
   voice/               recognition.js · synthesis.js · prosody.js · voicefx.js
+                       catsounds.js — purr, chirp, sneeze, grumble
   clinical/
     lexicon.js         affect lexicon, intensifiers, negation scoping
     nlu.js             understanding a turn

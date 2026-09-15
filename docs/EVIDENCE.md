@@ -354,6 +354,53 @@ emotion, detect deception, or screen for any condition.
 
 ---
 
+## 6a. Touch and self-soothing
+
+**Pendry & Vandagriff (2019). Animal visitation program reduces cortisol levels
+of university students. *AERA Open*.**
+[WSU summary](https://news.wsu.edu/press-release/2019/07/15/study-demonstrates-stress-reduction-benefits-petting-dogs-cats/)
+· [ScienceDaily](https://www.sciencedaily.com/releases/2019/07/190715114302.htm)
+
+249 students randomised across four conditions. Those given ten minutes of
+hands-on interaction with cats and dogs — petting, playing, simply being near
+them — showed significantly lower salivary cortisol afterwards. Notable for being
+a real-world intervention rather than a laboratory manipulation. The proposed
+mechanism is oxytocin release dampening the stress response, which is a
+hypothesised pathway rather than a settled one.
+
+*Used for:* the justification for the petting loop, and for keeping stroking
+available at every risk tier when playful reactions are suppressed.
+
+**Linehan. DBT Self-Soothe, within the distress tolerance module.**
+[Self-soothe with the five senses](https://dialecticalbehaviortherapy.com/distress-tolerance/self-soothing/)
+
+Sensory experience used deliberately to interrupt dysregulation, with touch as
+one of the five channels — the smooth stone in a pocket, the soft blanket.
+
+*Used for:* framing stroking as a skill rather than a distraction, and for the
+milestone that converts it into paced breathing.
+
+**A caveat, stated plainly.** Self-Soothe is standard practice inside an
+evidence-based treatment package, but *rhythmic tactile stimulation as a
+standalone intervention* is not well evidenced, and the animal-contact finding
+above involved real animals. Stroking a drawing of a cat is not the same
+intervention. What can honestly be claimed is that the loop is built on a
+recognised clinical skill and a plausible mechanism — not that it has been shown
+to work.
+
+**Human-cat interaction handling guidelines (2021).**
+[PMC8381768](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8381768/)
+
+Best-practice handling increases affiliative behaviour and reduces signs of
+conflict in cats. Slow blinking is part of that repertoire — a non-threat signal
+running in both directions.
+
+*Used for:* the `slow_blink` gesture, played when a hand rests on him and at
+stroke milestones. It is the most legible gesture of trust a cat has, and worth
+more here than any amount of smiling.
+
+---
+
 ## 7. Animation and speech
 
 **Preston Blair phoneme series.**
@@ -423,3 +470,5 @@ Stated plainly, because a reference list can imply more rigour than exists:
 - **The prosody model is a heuristic**, validated here against synthetic signals
   rather than against labelled human speech.
 - **No clinician was involved** in writing any of this.
+- **The touch layer is an inference, not a finding.** Petting a real animal
+  lowers cortisol; nobody has shown that stroking an SVG does.

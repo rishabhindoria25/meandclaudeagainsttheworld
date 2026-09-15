@@ -163,6 +163,123 @@ export const GESTURES = {
       p.earRotate += e * 0.9; p.eyeOpen += e * 0.2; p.pupilScale += e * 0.15; p.bodyLean += e * 0.2;
     },
   },
+  /** Eyes close, head tips into the hand. The stroking pose. */
+  lean_into: {
+    duration: 2400,
+    apply: (p, k) => {
+      const e = Math.sin(k * Math.PI);
+      p.eyeOpen -= e * 0.55;
+      p.squint += e * 0.35;
+      p.headTilt += e * 7;
+      p.mouthCurve += e * 0.3;
+      p.earRotate -= e * 0.25;   // ears relax back, the contented position
+      p.bodyLean += e * 0.18;
+    },
+  },
+
+  /**
+   * The slow blink. Cats use it to signal that they are not a threat and do not
+   * feel threatened, and it is the single most legible gesture of trust a cat
+   * has. Worth more here than any amount of smiling.
+   */
+  slow_blink: {
+    duration: 1900,
+    apply: (p, k) => {
+      // Close slowly, hold, open slowly.
+      const shape = k < 0.4 ? k / 0.4 : k < 0.62 ? 1 : 1 - (k - 0.62) / 0.38;
+      p.eyeOpen -= shape * 0.92;
+      p.mouthCurve += shape * 0.18;
+    },
+  },
+
+  /** A small involuntary flick, for an ear that has just been touched. */
+  ear_flick: {
+    duration: 420,
+    apply: (p, k) => {
+      const e = Math.sin(k * Math.PI * 2.5) * (1 - k);
+      p.earRotate += e * 0.7;
+      p.headTilt += e * 3;
+    },
+  },
+
+  /** Jumped at. Fast in, slow out, as a startle actually behaves. */
+  startle: {
+    duration: 620,
+    apply: (p, k) => {
+      const e = k < 0.12 ? k / 0.12 : Math.max(0, 1 - (k - 0.12) / 0.88);
+      p.eyeOpen += e * 0.3;
+      p.pupilScale += e * 0.3;
+      p.earRotate += e * 0.6;
+      p.bodyLean -= e * 0.25;
+      p.squashY = (p.squashY ?? 0) - e * 0.035;
+    },
+  },
+
+  /** Wriggling away from a poked belly. */
+  squirm: {
+    duration: 900,
+    apply: (p, k) => {
+      const wobble = Math.sin(k * Math.PI * 4) * (1 - k);
+      p.headTilt += wobble * 9;
+      p.bodyLean += wobble * 0.22;
+      p.squint += Math.sin(k * Math.PI) * 0.4;
+      p.mouthCurve += Math.sin(k * Math.PI) * 0.45;
+    },
+  },
+
+  /** Nose scrunch into a sneeze. */
+  sneeze: {
+    duration: 800,
+    apply: (p, k) => {
+      if (k < 0.55) {
+        const build = k / 0.55;
+        p.eyeOpen -= build * 0.6;
+        p.browFurrow += build * 0.5;
+        p.headNod -= build * 0.25;      // head tips back
+      } else {
+        const burst = 1 - (k - 0.55) / 0.45;
+        p.headNod += burst * 0.5;       // and snaps forward
+        p.mouthOpen += burst * 0.4;
+        p.eyeOpen -= burst * 0.8;
+        p.squashY = (p.squashY ?? 0) + burst * 0.045;
+      }
+    },
+  },
+
+  /** Unimpressed, after a tail pull. Looks round at you. */
+  grumble: {
+    duration: 1400,
+    apply: (p, k) => {
+      const e = Math.sin(k * Math.PI);
+      p.browFurrow += e * 0.55;
+      p.squint += e * 0.4;
+      p.headTurn -= e * 0.3;
+      p.earRotate -= e * 0.7;
+      p.tailSway += e * 1.2;
+      p.mouthCurve -= e * 0.25;
+    },
+  },
+
+  /** A body-wide vibration, driven by the purr. */
+  purr_shiver: {
+    duration: 700,
+    apply: (p, k) => {
+      const v = Math.sin(k * Math.PI * 12) * (1 - k) * 0.012;
+      p.squashY = (p.squashY ?? 0) + v;
+    },
+  },
+
+  /** Pulls a paw back out of reach. */
+  paw_tuck: {
+    duration: 700,
+    apply: (p, k) => {
+      const e = Math.sin(k * Math.PI);
+      p.bodyLean -= e * 0.2;
+      p.headNod += e * 0.18;
+      p.squint += e * 0.25;
+    },
+  },
+
   // Squash and stretch on an emphasised word: the oldest trick in animation and
   // still the one that most reliably makes a drawing feel alive.
   emphasis: {

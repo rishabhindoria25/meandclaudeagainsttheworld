@@ -74,6 +74,10 @@ export class Animator {
     this.twitchT = -1;
     this.twitchSide = 'l';
 
+    /** Where to look, in normalised gaze units. Null means look ahead. */
+    this.gaze = null;
+    this.gazeStrength = 0;
+
     /** @type {{timeline:object, startedAt:number, rate:number}|null} */
     this.speech = null;
     /** @type {Array<{name:string, startedAt:number}>} */
@@ -106,6 +110,19 @@ export class Animator {
    */
   setPose(pose) {
     this.target = clampPose({ ...NEUTRAL, ...pose });
+  }
+
+  /**
+   * Track a point with the eyes.
+   *
+   * Following a cursor or a finger is the cheapest aliveness there is: it costs
+   * two numbers a frame and does more work than any expression, because being
+   * looked at is the thing that separates a creature from a drawing.
+   *
+   * @param {{x:number, y:number}|null} target normalised -1..1, or null to release
+   */
+  lookAt(target) {
+    this.gaze = target;
   }
 
   /** Play a one-shot postural gesture over the top of the current pose. */
@@ -211,6 +228,18 @@ export class Animator {
       this.pendingDoubleBlink = Math.random() < 0.22;
     }
 
+    // --- tracking a pointer, which overrides idle saccades ---
+    // Eases in and out rather than snapping, and never looks all the way to the
+    // edge: eyes pinned to a corner read as alarm, not attention.
+    this.gazeStrength += ((this.gaze ? 1 : 0) - this.gazeStrength) * Math.min(1, dt * 6);
+    if (this.gazeStrength > 0.02 && this.gaze) {
+      pose.gazeX = (pose.gazeX ?? 0) * (1 - this.gazeStrength) + this.gaze.x * 0.72 * this.gazeStrength;
+      pose.gazeY = (pose.gazeY ?? 0) * (1 - this.gazeStrength) + this.gaze.y * 0.6 * this.gazeStrength;
+      // A small head turn toward whatever he is watching.
+      pose.headTurn = (pose.headTurn ?? 0) + this.gaze.x * 0.14 * this.gazeStrength;
+      pose.headTilt = (pose.headTilt ?? 0) + this.gaze.x * 2.2 * this.gazeStrength;
+    }
+
     // --- micro-saccades ---
     this.nextSaccade -= dt * 1000;
     if (this.nextSaccade <= 0) {
@@ -222,8 +251,10 @@ export class Animator {
       };
       this.nextSaccade = exponential(big ? 2600 : 1100) + 320;
     }
-    pose.gazeX = (pose.gazeX ?? 0) + this.saccade.x;
-    pose.gazeY = (pose.gazeY ?? 0) + this.saccade.y;
+    // Saccades shrink while he is actively watching something.
+    const wander = 1 - this.gazeStrength * 0.8;
+    pose.gazeX = (pose.gazeX ?? 0) + this.saccade.x * wander;
+    pose.gazeY = (pose.gazeY ?? 0) + this.saccade.y * wander;
 
     // --- ear twitch: a small involuntary flick, rare enough to stay charming ---
     this.nextTwitch -= dt * 1000;

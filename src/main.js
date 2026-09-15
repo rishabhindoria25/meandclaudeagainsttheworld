@@ -15,6 +15,9 @@
  */
 
 import { mount } from './character/rig.js';
+import { GestureRecogniser, AgitationMeter, toRigSpace } from './character/touch.js';
+import { resolveReaction, pickLine, strokeMilestone, AGITATION_LINES } from './character/reactions.js';
+import { Purr, playReaction, playSneeze } from './voice/catsounds.js';
 import { Animator } from './character/animator.js';
 import { listeningPose, speakingPose, poseFor } from './character/expressions.js';
 import { textToVisemes } from './character/visemes.js';
@@ -49,6 +52,13 @@ const state = {
   prosody: new ProsodyAnalyser(),
   echo: new EchoToy(),
   micStream: null,
+  touch: null,
+  purr: null,
+  agitation: null,
+  strokeMilestones: new Set(),
+  reactionCooldowns: {},
+  soundsOn: true,
+  touchOn: true,
   detachProsody: null,
   lastMove: null,
   lastProsody: null,
@@ -77,6 +87,12 @@ async function boot() {
   state.animator.start();
 
   state.transcript = createTranscript($('transcript'));
+  wireTouch(parts);
+  if (typeof matchMedia === 'function' && matchMedia('(hover: none)').matches) {
+    $('cat-hint').textContent = 'You can stroke him, or poke him. He does not mind either.';
+  } else {
+    $('cat-hint').textContent = 'Stroke him, or poke him — he does not mind either. Keys: P to pet, N for his nose.';
+  }
 
   if (ttsSupported()) {
     state.speaker = new Speaker();
@@ -239,7 +255,7 @@ async function present(move, understanding, superseded = () => false) {
   state.transcript.add('tom', move.text, {
     kind: move.kind,
     resources: move.resources,
-    why: $('toggle-why').getAttribute('aria-pressed') === 'true' ? move.meta?.why : null,
+    why: whyInline() ? move.meta?.why : null,
   });
 
   renderWhy($('why-content'), move);
@@ -278,10 +294,173 @@ async function present(move, understanding, superseded = () => false) {
   setStatus('listening');
 }
 
+/** Whether the person has asked to see Tom's reasoning inline. */
+function whyInline() {
+  return $('toggle-why').getAttribute('aria-pressed') === 'true';
+}
+
 function setStatus(value) {
   const el = $('tom-status');
   el.dataset.state = value;
   el.textContent = { listening: 'Listening', speaking: 'Speaking', thinking: 'Thinking' }[value] ?? value;
+}
+
+/* ------------------------------------------------------------------ *
+ * Touch
+ * ------------------------------------------------------------------ */
+
+/**
+ * Make Tom touchable.
+ *
+ * Reactions are fired synchronously from the pointer handler so they land on the
+ * same frame as the touch. Anything that waits — even by a tick — reads as a
+ * button being pressed rather than an animal being prodded, and that difference
+ * is the entire feature.
+ */
+function wireTouch(parts) {
+  const svg = parts.svg;
+  if (!svg) return;
+
+  state.purr = new Purr();
+  state.agitation = new AgitationMeter();
+
+  state.touch = new GestureRecogniser({
+    onMove: ({ x, y, pressed }) => {
+      // Eyes follow the pointer. Cheap, and it does more for aliveness than any
+      // single expression.
+      state.animator.lookAt({
+        x: Math.max(-1, Math.min(1, (x - 210) / 190)),
+        y: Math.max(-1, Math.min(1, (y - 176) / 210)),
+      });
+      state.gazePressed = pressed;
+    },
+    onStroke: (info) => {
+      if (!state.touchOn) return;
+      const params = state.soundsOn ? state.purr.setCredit(info.credit) : { active: info.credit > 0.15 };
+      if (params.active) state.animator.gesture('purr_shiver');
+      const milestone = strokeMilestone(info.credit, state.strokeMilestones);
+      if (milestone) {
+        state.strokeMilestones.add(milestone.id);
+        if (milestone.gesture) state.animator.gesture(milestone.gesture);
+        if (milestone.text && !state.busy) {
+          const why = 'Stroking is a self-soothing behaviour in its own right. Pairing it with a longer out-breath turns it into paced breathing, which is the fastest non-pharmacological way to bring arousal down — offered here as stroking a cat rather than as an exercise.';
+          state.transcript.add('tom', milestone.text, { why: whyInline() ? why : null });
+          renderWhy($('why-content'), {
+            kind: 'reflect', text: milestone.text,
+            meta: { why, modality: 'DBT self-soothe / paced breathing', phase: state.director.phase, fidelity: state.director.fidelity() },
+          });
+        }
+      }
+    },
+    onGesture: (gesture) => handleTouch(gesture),
+  });
+
+  const pointer = (event) => toRigSpace(svg, event);
+
+  svg.addEventListener('pointerdown', (event) => {
+    svg.setPointerCapture?.(event.pointerId);
+    const { x, y } = pointer(event);
+    state.touch.begin({ x, y, t: performance.now(), pressure: event.pressure });
+  });
+
+  svg.addEventListener('pointermove', (event) => {
+    const { x, y } = pointer(event);
+    state.touch.move({ x, y, t: performance.now() });
+  });
+
+  const release = (event) => {
+    try { svg.releasePointerCapture?.(event.pointerId); } catch { /* not captured */ }
+    state.touch.end({ t: performance.now() });
+  };
+  svg.addEventListener('pointerup', release);
+  svg.addEventListener('pointercancel', () => state.touch.cancel());
+  svg.addEventListener('pointerleave', (event) => {
+    if (state.touch.active) release(event);
+    state.animator.lookAt(null);
+  });
+
+  // Keyboard equivalents, so the whole feature is not mouse-only.
+  svg.setAttribute('tabindex', '0');
+  svg.addEventListener('keydown', (event) => {
+    const map = {
+      p: { type: 'stroke', region: 'head' },
+      s: { type: 'stroke', region: 'head' },
+      t: { type: 'tap', region: 'head' },
+      n: { type: 'tap', region: 'nose' },
+      e: { type: 'tap', region: 'ear_l' },
+      b: { type: 'tap', region: 'belly' },
+    };
+    const gesture = map[event.key.toLowerCase()];
+    if (!gesture) return;
+    event.preventDefault();
+    if (gesture.type === 'stroke') {
+      state.touch.strokeCredit = Math.min(12, state.touch.strokeCredit + 1.5);
+      state.purr.setCredit(state.touch.strokeCredit);
+      state.animator.gesture('purr_shiver');
+    }
+    handleTouch(gesture);
+  });
+
+  // Stroke credit decays, so the purr trails off when hands come away.
+  setInterval(() => {
+    if (!state.touch) return;
+    const credit = state.touch.decay(0.4);
+    if (credit > 0 || state.purr.credit > 0) state.purr.setCredit(credit);
+  }, 400);
+}
+
+/** @param {{type:string, region:string|null}} gesture */
+function handleTouch(gesture) {
+  if (!state.touchOn) return;
+  const reaction = resolveReaction(gesture, {
+    riskTier: state.director?.riskTier ?? 0,
+    lastFired: state.reactionCooldowns,
+    now: Date.now(),
+  });
+
+  const level = state.agitation.record(gesture);
+  if (state.agitation.shouldNotice() && !state.busy && (state.director?.riskTier ?? 0) === 0) {
+    const line = AGITATION_LINES[Math.floor(Math.random() * AGITATION_LINES.length)];
+    const why = `Handling has become rough and fast (agitation ${level.toFixed(2)}). Noticed with curiosity rather than correction — the way a therapist notices a leg that will not stop moving.`;
+    state.transcript.add('tom', line, { why: whyInline() ? why : null });
+    renderWhy($('why-content'), {
+      kind: 'reflect', text: line,
+      meta: { why, modality: 'Behavioural observation', phase: state.director.phase, fidelity: state.director.fidelity() },
+    });
+    state.animator.gesture('tilt');
+  }
+
+  if (!reaction) return;
+  state.reactionCooldowns[reaction.id] = Date.now();
+
+  state.animator.gesture(reaction.gesture);
+  if (reaction.emotion && !state.animator.isSpeaking) {
+    state.animator.setPose(speakingPose(reaction.emotion, {
+      userValence: state.lastUnderstanding?.affect?.valence ?? 0,
+    }));
+    // Settle back into listening once the reaction has played.
+    clearTimeout(state.reactionSettle);
+    state.reactionSettle = setTimeout(() => {
+      if (!state.animator.isSpeaking) {
+        state.animator.setPose(listeningPose({
+          userArousal: state.lastUnderstanding?.affect?.arousal ?? 0.4,
+          engagement: 0.65,
+        }));
+      }
+    }, 2200);
+  }
+
+  if (state.soundsOn) {
+    if (reaction.sound === 'sneeze') playSneeze(state.purr.ctx ?? undefined);
+    else if (reaction.sound) playReaction(reaction.sound, state.purr.ctx ?? undefined);
+  }
+
+  const line = pickLine(reaction);
+  if (line && !state.busy) {
+    state.transcript.add('tom', line, {
+      why: whyInline() ? `Reaction to being touched (${reaction.id}).` : null,
+    });
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -487,6 +666,10 @@ function applySettings(settings) {
   $('opt-reduced-motion').checked = Boolean(settings.reducedMotion);
   $('opt-contrast').checked = Boolean(settings.highContrast);
   $('opt-voice-in').checked = settings.voiceIn !== false;
+  $('opt-sounds').checked = settings.sounds !== false;
+  $('opt-touch').checked = settings.touch !== false;
+  state.soundsOn = settings.sounds !== false;
+  state.touchOn = settings.touch !== false;
   if (Number.isFinite(settings.rate)) $('opt-rate').value = String(settings.rate);
   state.voiceOn = settings.voiceOut !== false;
   $('toggle-voice').setAttribute('aria-pressed', String(state.voiceOn));
@@ -642,6 +825,20 @@ function wireUI() {
     persistSettings({ voiceIn: e.target.checked });
   });
   $('opt-rate').addEventListener('change', (e) => persistSettings({ rate: Number(e.target.value) }));
+
+  $('opt-sounds').addEventListener('change', (e) => {
+    state.soundsOn = e.target.checked;
+    if (!e.target.checked) state.purr?.stop();
+    persistSettings({ sounds: e.target.checked });
+  });
+  $('opt-touch').addEventListener('change', (e) => {
+    state.touchOn = e.target.checked;
+    const svg = document.querySelector('#tom-mount svg');
+    if (svg) svg.style.pointerEvents = e.target.checked ? '' : 'none';
+    $('cat-hint').hidden = !e.target.checked;
+    if (!e.target.checked) { state.purr?.stop(); state.animator.lookAt(null); }
+    persistSettings({ touch: e.target.checked });
+  });
 
   $('region-setting').addEventListener('change', (e) => {
     state.region = e.target.value;
