@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="A voice-first animated companion built on evidence-based psychotherapy process research. Runs entirely on your device.">
-<title>Tom — a cat who listens</title>
+<meta name="description" content="A talking cat who listens. Built on evidence-based psychotherapy process research. Runs entirely on your device.">
+<title>Tom</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
 <link rel="stylesheet" href="./src/app.css">
 </head>
 <body>
 
-<a class="skip-link" href="#composer">Skip to the message box</a>
+<a class="skip-link" href="#talk">Skip to the talk button</a>
 
 <div id="app" class="app" data-state="intro">
 
@@ -27,68 +27,107 @@
       </div>
       <div class="sheet__actions">
         <button id="disclosure-accept" class="btn btn--primary" type="button">I understand — let's begin</button>
-        <a class="btn btn--quiet" href="#help-now">I need help right now</a>
       </div>
       <p class="sheet__fine">Tom is not a therapist and this is not treatment. If you are in danger, contact your local emergency services.</p>
     </div>
   </dialog>
 
-  <!-- ─── Crisis banner ────────────────────────────────────────────── -->
-  <aside id="crisis-banner" class="crisis" hidden aria-live="polite">
-    <div class="crisis__head">
-      <strong id="crisis-title">If you need a person right now</strong>
-      <button id="crisis-close" class="icon-btn" type="button" aria-label="Hide crisis numbers">✕</button>
+  <!-- ─── Crisis banner: overlays everything ───────────────────────── -->
+  <button id="crisis-banner" class="crisis" hidden type="button" aria-controls="crisis-panel">
+    <span class="crisis__mark" aria-hidden="true">!</span>
+    <span class="crisis__text">Need a person right now? Numbers here</span>
+    <span class="crisis__chev" aria-hidden="true">›</span>
+  </button>
+
+  <aside id="crisis-panel" class="panel panel--alarm" hidden aria-label="Crisis numbers">
+    <div class="panel__head">
+      <h2>If you need a person right now</h2>
+      <button class="icon-btn" type="button" data-close="crisis-panel" aria-label="Close">✕</button>
     </div>
-    <ul id="crisis-lines" class="crisis__lines"></ul>
-    <p class="crisis__note">Tom is a program. He cannot call anyone for you.</p>
+    <div class="panel__body">
+      <ul id="crisis-lines" class="crisis__lines"></ul>
+      <p class="hint">Tom is a program. He cannot call anyone for you.</p>
+    </div>
   </aside>
 
-  <!-- ─── Header ───────────────────────────────────────────────────── -->
-  <header class="topbar">
-    <div class="topbar__id">
-      <span class="topbar__mark" aria-hidden="true">🐱</span>
-      <span class="topbar__name">Tom</span>
-      <span class="badge badge--privacy" title="Nothing you say is sent anywhere. Everything stays in this browser.">On this device only</span>
-    </div>
-    <div class="topbar__tools">
-      <button id="toggle-voice" class="chip" type="button" aria-pressed="true">
-        <span aria-hidden="true">🔊</span> <span class="chip__label">Tom's voice</span>
+  <!-- ─── The scene ────────────────────────────────────────────────── -->
+  <main class="scene">
+
+    <div class="scene__top">
+      <button id="toggle-log" class="round round--sm" type="button" aria-controls="log-panel" aria-label="What we have said">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
       </button>
-      <button id="toggle-why" class="chip" type="button" aria-pressed="false" aria-controls="why-panel">
-        <span aria-hidden="true">🔍</span> <span class="chip__label">Why he said that</span>
-      </button>
-      <button id="toggle-settings" class="chip" type="button" aria-pressed="false" aria-controls="settings-panel">
-        <span aria-hidden="true">⚙</span> <span class="chip__label">Settings</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- ─── Stage ────────────────────────────────────────────────────── -->
-  <main class="stage">
-    <div class="stage__cat">
-      <div id="tom-mount" class="cat"></div>
-      <div id="tom-status" class="cat__status" aria-live="polite">Listening</div>
-      <p class="cat__hint" id="cat-hint">You can stroke him, or poke him. He does not mind either.</p>
-    </div>
-
-    <section class="conversation" aria-label="Conversation">
-      <div id="transcript" class="transcript" role="log" aria-live="polite" aria-relevant="additions text" tabindex="0"></div>
-
-      <div id="interim" class="interim" hidden aria-live="off"></div>
-
-      <form id="composer" class="composer" autocomplete="off">
-        <button id="mic" class="mic" type="button" aria-pressed="false" aria-label="Talk to Tom">
-          <span class="mic__icon" aria-hidden="true">🎙</span>
-          <span class="mic__ring" aria-hidden="true"></span>
+      <div class="scene__title">
+        <span class="scene__name">Tom</span>
+        <span class="badge badge--privacy" title="Nothing you say is sent anywhere. Everything stays in this browser.">
+          <span class="badge__full">On this device only</span>
+          <span class="badge__short">on device</span>
+        </span>
+      </div>
+      <div class="scene__top-right">
+        <button id="toggle-why" class="round round--sm" type="button" aria-pressed="false" aria-controls="why-panel" aria-label="Why he said that">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
         </button>
-        <label class="sr-only" for="say">What would you like to say?</label>
-        <textarea id="say" class="composer__input" rows="1" placeholder="Say it however it comes out…" enterkeyhint="send"></textarea>
-        <button id="send" class="btn btn--send" type="submit">Send</button>
-      </form>
+        <button id="toggle-settings" class="round round--sm" type="button" aria-pressed="false" aria-controls="settings-panel" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="14" cy="17" r="2"/></svg>
+        </button>
+      </div>
+    </div>
 
-      <div id="quick" class="quick" hidden></div>
-    </section>
+    <div class="scene__stage">
+      <div id="tom-mount" class="cat"></div>
+    </div>
+
+    <!-- Subtitles over the scene, not a chat log. -->
+    <div class="scene__captions">
+      <p id="you-said" class="caption caption--you" hidden aria-live="off"></p>
+      <div id="caption" class="caption caption--tom" role="status" aria-live="polite" aria-atomic="true"></div>
+      <ul id="caption-resources" class="caption__resources" hidden></ul>
+      <p id="caption-why" class="caption__why" hidden></p>
+    </div>
+
+    <div id="quick" class="quick" hidden></div>
+
+    <div class="scene__controls">
+      <button id="toggle-typing" class="round round--md" type="button" aria-expanded="false" aria-controls="typing-sheet" aria-label="Type instead of talking">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 9.5h.01M10 9.5h.01M13.5 9.5h.01M17 9.5h.01M6.5 12.8h.01M10 12.8h.01M13.5 12.8h.01M17 12.8h.01M8.5 15.8h7"/></svg>
+      </button>
+
+      <button id="talk" class="talk" type="button" aria-pressed="false">
+        <span class="talk__ring" aria-hidden="true"></span>
+        <svg class="talk__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+        <span id="talk-label" class="talk__label">Hold to talk</span>
+      </button>
+
+      <button id="toggle-voice" class="round round--md" type="button" aria-pressed="true" aria-label="Tom's voice">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18 6.5a7.8 7.8 0 0 1 0 11"/></svg>
+      </button>
+    </div>
+
+    <p id="hint" class="scene__hint">Stroke him, or poke him. He does not mind either.</p>
   </main>
+
+  <!-- ─── Typing, one button away ──────────────────────────────────── -->
+  <div id="typing-sheet" class="typing" hidden>
+    <form id="composer" class="typing__form" autocomplete="off">
+      <label class="sr-only" for="say">What would you like to say?</label>
+      <textarea id="say" class="typing__input" rows="1" placeholder="Say it however it comes out…" enterkeyhint="send"></textarea>
+      <button id="send" class="btn btn--send" type="submit">Send</button>
+      <button id="close-typing" class="icon-btn" type="button" aria-label="Close">✕</button>
+    </form>
+  </div>
+
+  <!-- ─── What we have said ────────────────────────────────────────── -->
+  <aside id="log-panel" class="panel" hidden aria-label="What we have said">
+    <div class="panel__head">
+      <h2>What we have said</h2>
+      <button class="icon-btn" type="button" data-close="log-panel" aria-label="Close">✕</button>
+    </div>
+    <div class="panel__body">
+      <div id="transcript" class="transcript" role="log" aria-live="off" tabindex="0"></div>
+      <button id="export-transcript" class="btn btn--quiet" type="button">Save this conversation</button>
+    </div>
+  </aside>
 
   <!-- ─── Why panel ────────────────────────────────────────────────── -->
   <aside id="why-panel" class="panel" hidden aria-label="Why Tom said that">
@@ -101,7 +140,7 @@
       <dl id="why-content" class="why"></dl>
       <div class="fidelity">
         <h3>Session fidelity</h3>
-        <p class="fidelity__intro">Measures from motivational interviewing’s own fidelity coding, applied to Tom in real time.</p>
+        <p class="fidelity__intro">Measures from motivational interviewing's own fidelity coding, applied to Tom in real time.</p>
         <div id="fidelity-content" class="fidelity__grid"></div>
       </div>
     </div>
@@ -118,10 +157,11 @@
         <h3>Comfort</h3>
         <label class="switch"><input type="checkbox" id="opt-reduced-motion"> <span>Reduce movement</span></label>
         <label class="switch"><input type="checkbox" id="opt-contrast"> <span>Higher contrast</span></label>
-        <label class="switch"><input type="checkbox" id="opt-captions" checked> <span>Always show captions</span></label>
+        <label class="switch"><input type="checkbox" id="opt-captions" checked> <span>Show what Tom says as text</span></label>
         <label class="switch"><input type="checkbox" id="opt-sounds" checked> <span>Purring and sound effects</span></label>
         <label class="switch"><input type="checkbox" id="opt-touch" checked> <span>Let me touch him</span></label>
         <label class="switch"><input type="checkbox" id="opt-voice-in" checked> <span>Let me talk (microphone)</span></label>
+        <label class="switch"><input type="checkbox" id="opt-hold"> <span>Tap to start and stop, instead of holding</span></label>
         <label class="field"><span>Tom's pace</span>
           <input type="range" id="opt-rate" min="0.7" max="1.25" step="0.05" value="1">
         </label>

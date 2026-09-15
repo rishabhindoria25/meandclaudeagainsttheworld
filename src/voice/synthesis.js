@@ -170,6 +170,17 @@ export class Speaker {
     this.speaking = false;
     this.queue = [];
     this._cancelled = false;
+    /**
+     * Whether synthesis actually produces speech here. Null until we find out.
+     *
+     * Several environments report `speechSynthesis` support and then never
+     * speak — a headless browser, a muted device policy, an autoplay block, a
+     * platform voice that failed to load. Paying the start-up watchdog on every
+     * chunk of every turn in that case makes the whole app feel broken, so the
+     * first failure is remembered and speech is skipped from then on. Captions
+     * carry the conversation, which is the design anyway.
+     */
+    this.functional = null;
     this._onBoundary = null;
     this._onChunk = null;
   }
@@ -186,11 +197,16 @@ export class Speaker {
    *          onChunk?:(chunk:{text:string, settings:object})=>void,
    *          onBoundary?:(info:{charIndex:number, elapsedMs:number})=>void}} [opts]
    * @returns {Promise<void>} resolves when speech finishes or is cancelled
+   *
+   * If synthesis turns out not to work here, this returns quickly and stays
+   * quiet thereafter; the captions are unaffected.
    */
   async speak(text, opts = {}) {
     if (!isSupported()) return;
     this.cancel();
     this._cancelled = false;
+
+    if (this.functional === false) return;
 
     const settings = prosodyFor(opts.emotion, opts);
     const chunks = chunk(text);
@@ -199,7 +215,13 @@ export class Speaker {
     for (const piece of chunks) {
       if (this._cancelled) break;
       opts.onChunk?.({ text: piece.text, settings });
-      await this._speakChunk(piece.text, settings, opts.onBoundary);
+      const spoke = await this._speakChunk(piece.text, settings, opts.onBoundary);
+      if (!spoke) {
+        // Never started. Do not spend the rest of the turn waiting on silence.
+        this.functional = false;
+        break;
+      }
+      this.functional = true;
       if (this._cancelled) break;
       if (piece.pauseAfter) await delay(piece.pauseAfter / settings.rate);
     }
@@ -217,21 +239,43 @@ export class Speaker {
 
       const startedAt = performance.now();
       let finished = false;
-      const finish = () => { if (!finished) { finished = true; resolve(); } };
+      let started = false;
+      const timers = [];
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        for (const t of timers) clearTimeout(t);
+        resolve(started);
+      };
 
+      utterance.onstart = () => { started = true; };
       utterance.onboundary = (event) => {
+        started = true;
         onBoundary?.({ charIndex: event.charIndex ?? 0, elapsedMs: performance.now() - startedAt });
       };
       utterance.onend = finish;
       utterance.onerror = finish;
 
-      // Some browsers drop an utterance silently. A generous watchdog based on an
-      // estimate of the speech duration prevents the queue stalling forever.
-      const estimate = (text.length / 13) * 1000 / settings.rate + 2500;
-      setTimeout(finish, estimate);
+      // Two watchdogs, because speech synthesis fails in two different ways.
+      //
+      // It can fail to start at all — no audio output, a platform that reports
+      // support it does not have, an autoplay policy. Waiting out a duration
+      // estimate in that case leaves the interface frozen for ten seconds per
+      // sentence while the person sits looking at a cat that will not respond.
+      timers.push(setTimeout(() => { if (!started) finish(); }, 900));
+
+      // Or it can start and then never report finishing, which some browsers do
+      // on long utterances. That one needs the duration estimate.
+      const estimate = (text.length / 14) * 1000 / settings.rate + 1200;
+      timers.push(setTimeout(finish, estimate));
 
       speechSynthesis.speak(utterance);
     });
+  }
+
+  /** Re-test synthesis, e.g. after the person interacts and autoplay unblocks. */
+  resetAvailability() {
+    this.functional = null;
   }
 
   cancel() {

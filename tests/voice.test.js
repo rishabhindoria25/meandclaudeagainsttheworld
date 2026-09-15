@@ -230,3 +230,74 @@ describe('the playful echo is hard-gated', () => {
       'a cartoon voice after a disclosure would be grotesque');
   });
 });
+
+describe('synthesis that never actually speaks', () => {
+  /**
+   * Several environments report speechSynthesis support and then stay silent:
+   * a headless browser, a muted device policy, an autoplay block, a platform
+   * voice that failed to load. The app must not freeze waiting on silence.
+   */
+  function withFakeSpeech({ speaks }, run) {
+    const utterances = [];
+    class FakeUtterance {
+      constructor(text) { this.text = text; utterances.push(this); }
+    }
+    const synth = {
+      speak(u) {
+        if (!speaks) return;                       // silently does nothing
+        setTimeout(() => { u.onstart?.(); u.onend?.(); }, 5);
+      },
+      cancel() {},
+      getVoices: () => [],
+    };
+    const priorWindow = globalThis.window;
+    const priorUtterance = globalThis.SpeechSynthesisUtterance;
+    const priorPerf = globalThis.performance;
+    globalThis.window = { speechSynthesis: synth, SpeechSynthesisUtterance: FakeUtterance };
+    globalThis.speechSynthesis = synth;
+    globalThis.SpeechSynthesisUtterance = FakeUtterance;
+    globalThis.performance = priorPerf ?? { now: () => Date.now() };
+    return run(utterances).finally(() => {
+      globalThis.window = priorWindow;
+      globalThis.SpeechSynthesisUtterance = priorUtterance;
+      delete globalThis.speechSynthesis;
+    });
+  }
+
+  test('a silent platform is detected and not waited on again', async () => {
+    const { Speaker } = await import('../src/voice/synthesis.js');
+    await withFakeSpeech({ speaks: false }, async () => {
+      const speaker = new Speaker();
+      const long = 'One sentence here. Another sentence here. A third one as well. And a fourth.';
+
+      const firstStart = Date.now();
+      await speaker.speak(long);
+      const firstMs = Date.now() - firstStart;
+
+      assert.equal(speaker.functional, false, 'must notice that nothing was spoken');
+      assert.ok(firstMs < 2500, `first turn took ${firstMs}ms; it must abandon after the first silent chunk`);
+
+      const secondStart = Date.now();
+      await speaker.speak(long);
+      assert.ok(Date.now() - secondStart < 60, 'later turns must not pay the watchdog at all');
+    });
+  });
+
+  test('a working platform is marked functional and speaks every chunk', async () => {
+    const { Speaker } = await import('../src/voice/synthesis.js');
+    await withFakeSpeech({ speaks: true }, async (utterances) => {
+      const speaker = new Speaker();
+      await speaker.speak('First sentence. Second sentence. Third sentence.');
+      assert.equal(speaker.functional, true);
+      assert.equal(utterances.length, 3, 'every chunk should be spoken');
+    });
+  });
+
+  test('availability can be re-tested', async () => {
+    const { Speaker } = await import('../src/voice/synthesis.js');
+    const speaker = new Speaker();
+    speaker.functional = false;
+    speaker.resetAvailability();
+    assert.equal(speaker.functional, null);
+  });
+});

@@ -59,6 +59,10 @@ const state = {
   reactionCooldowns: {},
   soundsOn: true,
   touchOn: true,
+  captionsOn: true,
+  holdToTalk: true,
+  status: 'listening',
+  defaultHint: '',
   detachProsody: null,
   lastMove: null,
   lastProsody: null,
@@ -88,11 +92,10 @@ async function boot() {
 
   state.transcript = createTranscript($('transcript'));
   wireTouch(parts);
-  if (typeof matchMedia === 'function' && matchMedia('(hover: none)').matches) {
-    $('cat-hint').textContent = 'You can stroke him, or poke him. He does not mind either.';
-  } else {
-    $('cat-hint').textContent = 'Stroke him, or poke him — he does not mind either. Keys: P to pet, N for his nose.';
-  }
+  state.defaultHint = (typeof matchMedia === 'function' && matchMedia('(hover: none)').matches)
+    ? 'Stroke him, or poke him. He does not mind either.'
+    : 'Stroke him, or poke him — he does not mind either. Keys: P to pet, N for his nose.';
+  $('hint').textContent = state.defaultHint;
 
   if (ttsSupported()) {
     state.speaker = new Speaker();
@@ -141,7 +144,7 @@ function showDisclosure() {
     $('app').dataset.state = 'ready';
     renderCrisisLines($('settings-crisis-lines'));
     openingTurn(memory.bridge(state.store));
-    $('say').focus();
+    $('talk').focus();
   }, { once: true });
 }
 
@@ -182,8 +185,7 @@ async function handleUserTurn(rawText) {
   state.busy = true;
 
   state.transcript.add('user', text);
-  $('interim').hidden = true;
-  $('interim').textContent = '';
+  showYouSaid(text);
   $('say').value = '';
   autosize($('say'));
 
@@ -252,10 +254,11 @@ async function handleUserTurn(rawText) {
 async function present(move, understanding, superseded = () => false) {
   state.lastMove = move;
 
+  showCaption(move);
   state.transcript.add('tom', move.text, {
     kind: move.kind,
     resources: move.resources,
-    why: whyInline() ? move.meta?.why : null,
+    why: move.meta?.why,
   });
 
   renderWhy($('why-content'), move);
@@ -300,9 +303,75 @@ function whyInline() {
 }
 
 function setStatus(value) {
-  const el = $('tom-status');
-  el.dataset.state = value;
-  el.textContent = { listening: 'Listening', speaking: 'Speaking', thinking: 'Thinking' }[value] ?? value;
+  state.status = value;
+  const label = $('talk-label');
+  if (state.micOn) { label.textContent = 'Listening…'; return; }
+  label.textContent = {
+    listening: state.holdToTalk ? 'Hold to talk' : 'Tap to talk',
+    speaking: 'Tom is talking',
+    thinking: 'Thinking…',
+  }[value] ?? value;
+}
+
+/**
+ * Show what Tom just said, as a subtitle over the scene.
+ *
+ * Deliberately not a chat log. The character is the interface, and a scrolling
+ * transcript beside him turns him into decoration. It stays up until he says
+ * something else rather than fading on a timer, because a caption you can miss
+ * is not doing its job.
+ */
+function showCaption(move) {
+  const caption = $('caption');
+  const resources = $('caption-resources');
+  const why = $('caption-why');
+
+  if (!state.captionsOn) {
+    caption.textContent = '';
+    resources.hidden = true;
+    why.hidden = true;
+    return;
+  }
+
+  caption.textContent = move.text;
+  caption.classList.toggle('caption--safety', move.kind === 'safety' || move.kind === 'safety_plan');
+  // Re-trigger the entrance animation.
+  caption.style.animation = 'none';
+  void caption.offsetWidth;
+  caption.style.animation = '';
+
+  resources.replaceChildren();
+  if (move.resources) {
+    for (const line of move.resources.split('\n').filter(Boolean)) {
+      const li = document.createElement('li');
+      const [name, ...rest] = line.split(':');
+      const detail = rest.join(':').trim();
+      if (detail) {
+        const strong = document.createElement('strong');
+        strong.textContent = name.trim();
+        const span = document.createElement('span');
+        span.textContent = detail;
+        li.append(strong, span);
+      } else li.textContent = line;
+      resources.append(li);
+    }
+  }
+  resources.hidden = !move.resources;
+  // Always start at the top of the block, so his sentence is what you read first.
+  $('caption').closest('.scene__captions')?.scrollTo({ top: 0, behavior: 'auto' });
+
+  const wantWhy = whyInline() && move.meta?.why;
+  why.textContent = wantWhy ? move.meta.why : '';
+  why.hidden = !wantWhy;
+}
+
+/** Briefly echo what the person said, the way the old toys showed your words. */
+function showYouSaid(text) {
+  const el = $('you-said');
+  el.textContent = text;
+  el.hidden = !text;
+  clearTimeout(state.youSaidTimer);
+  if (text) state.youSaidTimer = setTimeout(() => { el.hidden = true; }, 6000);
 }
 
 /* ------------------------------------------------------------------ *
@@ -412,6 +481,7 @@ function wireTouch(parts) {
 /** @param {{type:string, region:string|null}} gesture */
 function handleTouch(gesture) {
   if (!state.touchOn) return;
+  markTouched();
   const reaction = resolveReaction(gesture, {
     riskTier: state.director?.riskTier ?? 0,
     lastFired: state.reactionCooldowns,
@@ -469,15 +539,19 @@ function handleTouch(gesture) {
 
 async function startMic() {
   if (!sttSupported()) {
-    state.transcript.add('system', 'This browser cannot do speech recognition, so the microphone button is off. Typing works exactly the same — Tom does not treat it differently.');
-    $('mic').disabled = true;
+    // Firefox and others. Fail toward typing rather than toward nothing.
+    $('talk').disabled = true;
+    $('talk-label').textContent = 'Type instead';
+    $('hint').textContent = 'This browser cannot listen. Tap the keyboard to type — Tom does not treat it any differently.';
+    openTyping();
     return;
   }
 
   try {
     state.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch {
-    state.transcript.add('system', 'The microphone was not available. You can type instead.');
+    $('hint').textContent = 'The microphone was not available. You can type instead.';
+    openTyping();
     return;
   }
 
@@ -486,11 +560,7 @@ async function startMic() {
 
   state.listener = new Listener({
     lang: navigator.language,
-    onInterim: (text) => {
-      const el = $('interim');
-      el.hidden = false;
-      el.textContent = text;
-    },
+    onInterim: (text) => showYouSaid(text),
     onFinal: (text) => {
       const summary = state.prosody.summarise({ wordCount: text.split(/\s+/).length });
       state.lastProsody = { summary, at: Date.now() };
@@ -498,23 +568,25 @@ async function startMic() {
       handleUserTurn(text);
     },
     onError: (err) => {
+      $('hint').textContent = err.message;
       state.transcript.add('system', err.message);
-      if (err.fatal) stopMic();
+      if (err.fatal) { stopMic(); openTyping(); }
     },
   });
 
   if (state.listener.start()) {
     state.micOn = true;
-    $('mic').setAttribute('aria-pressed', 'true');
-    $('mic').setAttribute('aria-label', 'Stop talking');
+    $('talk').setAttribute('aria-pressed', 'true');
+    $('talk-label').textContent = 'Listening…';
+    $('hint').textContent = state.holdToTalk ? 'Let go when you have finished.' : 'Tap again when you have finished.';
   }
 }
 
 function stopMic() {
   state.micOn = false;
-  $('mic').setAttribute('aria-pressed', 'false');
-  $('mic').setAttribute('aria-label', 'Talk to Tom');
-  $('interim').hidden = true;
+  $('talk').setAttribute('aria-pressed', 'false');
+  $('hint').textContent = state.defaultHint;
+  setStatus(state.status ?? 'listening');
 
   state.listener?.stop();
   state.listener = null;
@@ -534,6 +606,11 @@ function showCrisisBanner() {
   renderCrisisLines($('crisis-lines'));
   banner.hidden = false;
   $('app').dataset.crisis = 'true';
+}
+
+/** Mark that he has been touched, so the how-to-use hint can recede. */
+function markTouched() {
+  $('app').dataset.touched = 'true';
 }
 
 function renderCrisisLines(root) {
@@ -588,7 +665,15 @@ function updateQuickReplies(move) {
   /** @type {Array<{label:string, send?:string, action?:()=>void}>} */
   let options = [];
 
-  if (move.expects === 'yesno') {
+  // During a risk conversation the shortcuts have to fit the conversation.
+  // "Say more about that" is a fine prompt on a Tuesday and an absurd one when
+  // somebody has just told you they have been thinking about ending their life.
+  if ((state.director?.riskTier ?? 0) >= TIER.PASSIVE_IDEATION) {
+    options = move.expects === 'yesno' || /\?\s*$/.test(move.text)
+      ? [{ label: 'Yes', send: 'yes' }, { label: 'No', send: 'no' },
+         { label: 'I am not sure', send: 'I am not sure' }]
+      : [{ label: 'Show me the numbers', action: () => openPanel('crisis-panel') }];
+  } else if (move.expects === 'yesno') {
     options = [
       { label: 'Yes, go on', send: 'yes' },
       { label: 'Not right now', send: 'not right now' },
@@ -666,6 +751,10 @@ function applySettings(settings) {
   $('opt-reduced-motion').checked = Boolean(settings.reducedMotion);
   $('opt-contrast').checked = Boolean(settings.highContrast);
   $('opt-voice-in').checked = settings.voiceIn !== false;
+  $('opt-hold').checked = Boolean(settings.tapToTalk);
+  $('opt-captions').checked = settings.captions !== false;
+  state.holdToTalk = !settings.tapToTalk;
+  state.captionsOn = settings.captions !== false;
   $('opt-sounds').checked = settings.sounds !== false;
   $('opt-touch').checked = settings.touch !== false;
   state.soundsOn = settings.sounds !== false;
@@ -731,8 +820,20 @@ function offerMeasure(instrument) {
  * Panels
  * ------------------------------------------------------------------ */
 
+/** Slide the typing sheet up and put the caret in it. */
+function openTyping() {
+  $('typing-sheet').hidden = false;
+  $('toggle-typing').setAttribute('aria-expanded', 'true');
+  $('say').focus();
+}
+
+function closeTyping() {
+  $('typing-sheet').hidden = true;
+  $('toggle-typing').setAttribute('aria-expanded', 'false');
+}
+
 function openPanel(id) {
-  for (const other of ['why-panel', 'settings-panel']) {
+  for (const other of ['why-panel', 'settings-panel', 'log-panel', 'crisis-panel']) {
     if (other !== id) closePanel(other);
   }
   $(id).hidden = false;
@@ -744,7 +845,7 @@ function openPanel(id) {
 
 function closePanel(id) {
   $(id).hidden = true;
-  const anyOpen = ['why-panel', 'settings-panel'].some((p) => !$(p).hidden);
+  const anyOpen = ['why-panel', 'settings-panel', 'log-panel', 'crisis-panel'].some((p) => !$(p).hidden);
   $('scrim').hidden = anyOpen ? false : true;
   document.querySelector(`[aria-controls="${id}"]`)?.setAttribute('aria-pressed', 'false');
 }
@@ -774,8 +875,57 @@ function wireUI() {
     }
   });
 
-  $('mic').addEventListener('click', () => {
-    if (state.micOn) stopMic(); else startMic();
+  // ---- the talk button ----
+  //
+  // Hold-to-talk by default, because it makes "the microphone is on" a physical
+  // fact you can feel rather than a state you have to remember. Tap-to-toggle is
+  // a setting, for anyone who cannot hold a button down.
+  const talk = $('talk');
+  let holdStarted = 0;
+
+  const beginTalk = (event) => {
+    if (talk.disabled) return;
+    event?.preventDefault();
+    if (!state.holdToTalk) {
+      if (state.micOn) stopMic(); else startMic();
+      return;
+    }
+    holdStarted = Date.now();
+    startMic();
+  };
+
+  const endTalk = (event) => {
+    if (!state.holdToTalk || !state.micOn) return;
+    event?.preventDefault();
+    // A stray click should not immediately cut a recording that just started.
+    const held = Date.now() - holdStarted;
+    if (held < 320) { setTimeout(() => { if (state.micOn) stopMic(); }, 320 - held); return; }
+    stopMic();
+  };
+
+  talk.addEventListener('pointerdown', beginTalk);
+  talk.addEventListener('pointerup', endTalk);
+  talk.addEventListener('pointercancel', endTalk);
+  talk.addEventListener('pointerleave', endTalk);
+  // Keyboard: space or enter holds while pressed.
+  talk.addEventListener('keydown', (event) => {
+    if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) beginTalk(event);
+  });
+  talk.addEventListener('keyup', (event) => {
+    if (event.key === ' ' || event.key === 'Enter') endTalk(event);
+  });
+
+  // ---- typing, one button away ----
+  $('toggle-typing').addEventListener('click', () => {
+    if ($('typing-sheet').hidden) openTyping(); else closeTyping();
+  });
+  $('close-typing').addEventListener('click', closeTyping);
+
+  // ---- the record of what was said ----
+  $('toggle-log').addEventListener('click', () => togglePanel('log-panel'));
+  $('export-transcript').addEventListener('click', () => {
+    download(`tom-conversation-${new Date().toISOString().slice(0, 10)}.txt`,
+      state.transcript.toText(), 'text/plain');
   });
 
   $('toggle-voice').addEventListener('click', () => {
@@ -785,29 +935,26 @@ function wireUI() {
     persistSettings({ voiceOut: state.voiceOn });
   });
 
-  $('toggle-why').addEventListener('click', () => togglePanel('why-panel'));
+  $('toggle-why').addEventListener('click', () => {
+    togglePanel('why-panel');
+    if (state.lastMove) showCaption(state.lastMove);
+  });
   $('toggle-settings').addEventListener('click', () => togglePanel('settings-panel'));
 
   for (const btn of document.querySelectorAll('[data-close]')) {
     btn.addEventListener('click', () => closePanel(btn.dataset.close));
   }
   $('scrim').addEventListener('click', () => {
-    closePanel('why-panel');
-    closePanel('settings-panel');
+    for (const id of ['why-panel', 'settings-panel', 'log-panel', 'crisis-panel']) closePanel(id);
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closePanel('why-panel');
-      closePanel('settings-panel');
-    }
+    if (event.key !== 'Escape') return;
+    for (const id of ['why-panel', 'settings-panel', 'log-panel', 'crisis-panel']) closePanel(id);
+    closeTyping();
   });
 
-  $('crisis-close').addEventListener('click', () => {
-    $('crisis-banner').hidden = true;
-    delete $('app').dataset.crisis;
-    state.transcript.add('system', 'The numbers are still in Settings, under "Help right now", whenever you want them.');
-  });
+  $('crisis-banner').addEventListener('click', () => openPanel('crisis-panel'));
 
   // Comfort settings
   $('opt-reduced-motion').addEventListener('change', (e) => {
@@ -820,11 +967,24 @@ function wireUI() {
     persistSettings({ highContrast: e.target.checked });
   });
   $('opt-voice-in').addEventListener('change', (e) => {
-    $('mic').disabled = !e.target.checked;
+    $('talk').disabled = !e.target.checked;
     if (!e.target.checked && state.micOn) stopMic();
     persistSettings({ voiceIn: e.target.checked });
   });
   $('opt-rate').addEventListener('change', (e) => persistSettings({ rate: Number(e.target.value) }));
+
+  $('opt-hold').addEventListener('change', (e) => {
+    state.holdToTalk = !e.target.checked;
+    if (state.micOn) stopMic();
+    setStatus('listening');
+    persistSettings({ tapToTalk: e.target.checked });
+  });
+  $('opt-captions').addEventListener('change', (e) => {
+    state.captionsOn = e.target.checked;
+    if (!e.target.checked) { $('caption').textContent = ''; $('caption-why').hidden = true; $('caption-resources').hidden = true; }
+    else if (state.lastMove) showCaption(state.lastMove);
+    persistSettings({ captions: e.target.checked });
+  });
 
   $('opt-sounds').addEventListener('change', (e) => {
     state.soundsOn = e.target.checked;
@@ -835,7 +995,7 @@ function wireUI() {
     state.touchOn = e.target.checked;
     const svg = document.querySelector('#tom-mount svg');
     if (svg) svg.style.pointerEvents = e.target.checked ? '' : 'none';
-    $('cat-hint').hidden = !e.target.checked;
+    $('hint').hidden = !e.target.checked;
     if (!e.target.checked) { state.purr?.stop(); state.animator.lookAt(null); }
     persistSettings({ touch: e.target.checked });
   });
@@ -845,7 +1005,7 @@ function wireUI() {
     state.director.region = state.region;
     persistSettings({ region: state.region });
     renderCrisisLines($('settings-crisis-lines'));
-    if (!$('crisis-banner').hidden) renderCrisisLines($('crisis-lines'));
+    renderCrisisLines($('crisis-lines'));
   });
 
   // Measures
