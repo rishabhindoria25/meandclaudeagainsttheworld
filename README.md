@@ -1,23 +1,52 @@
 # Tom
 
-A voice-first animated companion that listens, built on psychotherapy process
-research rather than on vibes. An orange cat sits on your screen, you talk to
-him, and he reflects, asks, and — when it is warranted — offers a structured
-exercise from a specific evidence base and tells you which one and why.
+A talking cat who listens, built on psychotherapy process research rather than
+on vibes.
 
-You can also poke him.
+He fills the screen. You hold a button and talk to him, and he reflects, asks,
+and — when it is warranted — offers a structured exercise from a specific
+evidence base and tells you which one and why. You can stroke him while you do
+it, and he purrs.
 
 Everything runs in your browser. There is no account, no server, and no network
 call. Nothing you say leaves your device.
 
 ```bash
 npm start        # http://localhost:8173
-npm test         # 272 tests
+npm test         # 275 tests
 ```
 
 No build step, no dependencies, no binary assets — the purr is synthesised, not
 sampled. The server exists only to give ES modules an origin; it serves files
 and does nothing else.
+
+---
+
+## The interface
+
+There isn't much of one, on purpose. Tom *is* the interface: he fills the
+screen, one large button holds the microphone open while you speak, and what he
+says appears as a subtitle underneath him. Everything else is a small round
+button at the edge — the record of what was said, why he said it, settings.
+
+Two things survive that stripping-back, and both are deliberate.
+
+**Captions stay.** Not for tidiness. Someone who is deaf, in a shared house, or
+simply cannot face the sound of a voice at 2am would otherwise get nothing at
+all. They read as subtitles rather than as chat, and they persist until he says
+something else rather than fading on a timer, because a caption you can miss is
+not a caption.
+
+**Typing stays, one button away.** In Chromium browsers the Web Speech API sends
+your audio to the browser vendor's servers. That is a real privacy cost and it
+has to be refusable without losing access to the app. The keyboard icon opens a
+text field, and Tom treats typed and spoken input identically.
+
+The layout has a hard height budget rather than a minimum, so the talk button
+can never be pushed off the bottom of the screen. When Tom says something long,
+or puts crisis numbers on screen, **he shrinks and the controls stay put** —
+because the moment a caption is longest is the moment you most need the button
+that answers it.
 
 ---
 
@@ -390,7 +419,7 @@ scroll down to 320px.
 ## Tests
 
 ```bash
-npm test     # 272 tests
+npm test     # 275 tests
 ```
 
 The risk tests are the most important code in the project, and are written
@@ -412,7 +441,7 @@ turn. Each of those is now a test.
 ```
 index.html
 src/
-  main.js              turn loop, barge-in, panels, settings
+  main.js              turn loop, barge-in, captions, panels, settings
   app.css
   character/
     rig.js             the SVG drawing and its parameters
