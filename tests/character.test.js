@@ -4,7 +4,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { textToVisemes, sampleViseme, reanchor, VISEMES, VISEME_SHAPES } from '../src/character/visemes.js';
 import { poseFor, listeningPose, speakingPose, blend, NEUTRAL, EXPRESSIONS, GESTURES, clampPose } from '../src/character/expressions.js';
-import { markup, mouthGeometry, lidOffsets } from '../src/character/rig.js';
+import { markup, mouthGeometry, lidOffsets, EYE, LID_HEIGHT, PALETTE } from '../src/character/rig.js';
 
 describe('viseme timing', () => {
   test('produces a plausible speaking rate', () => {
@@ -162,6 +162,35 @@ describe('expressions', () => {
 });
 
 describe('rig geometry', () => {
+  test('the drawing is shaded rather than flat', () => {
+    const svg = markup();
+    const gradients = (svg.match(/<(radial|linear)Gradient/g) || []).length;
+    assert.ok(gradients >= 8, `only ${gradients} gradients; flat fills read as a doodle`);
+    assert.ok(svg.includes('url(#g-fur-head)'), 'the head should be shaded, not flat-filled');
+    assert.ok(svg.includes('url(#g-iris)'), 'the iris should be shaded');
+  });
+
+  test('every id the rig animates exists in the drawing', () => {
+    const svg = markup();
+    const required = [
+      'tom-svg', 'tom-root', 'tom-shadow', 'tom-body-group', 'tom-body', 'tom-tail', 'tom-tail-tip',
+      'tom-head', 'tom-skull', 'tom-ear-l', 'tom-ear-r', 'tom-iris-l', 'tom-iris-r',
+      'tom-pupil-l', 'tom-pupil-r', 'tom-lid-upper-l', 'tom-lid-lower-l', 'tom-lid-upper-r',
+      'tom-lid-lower-r', 'tom-brow-l', 'tom-brow-r', 'tom-blush-l', 'tom-blush-r',
+      'tom-mouth-interior', 'tom-mouth-line', 'tom-mouth-clip-path', 'tom-teeth', 'tom-tongue',
+      'tom-whiskers-l', 'tom-whiskers-r', 'tom-nose',
+    ];
+    for (const id of required) {
+      assert.ok(svg.includes(`id="${id}"`), `restyling dropped ${id}, which the animator writes to`);
+    }
+  });
+
+  test('the eye clip paths match the drawn eye', () => {
+    const svg = markup();
+    // A mismatch here silently crops the iris or lets the lids escape the eye.
+    assert.ok(svg.includes(`rx="${EYE.rx}" ry="${EYE.ry}"`), 'clip path must use the EYE constants');
+  });
+
   test('markup is well-formed enough to mount and is labelled', () => {
     const svg = markup();
     assert.match(svg, /<svg[^>]+role="img"/);
@@ -184,9 +213,44 @@ describe('rig geometry', () => {
     assert.ok(round.halfWidth < wide.halfWidth);
   });
 
-  test('lids close fully and open past neutral', () => {
+  test('lids rest on the eye when open and lift clear when wide', () => {
     assert.equal(lidOffsets(1, 0).upper, 0);
-    assert.ok(lidOffsets(0, 0).upper > 60, 'a closed lid must actually cover the eye');
     assert.ok(lidOffsets(1.25, 0).upper < 0, 'a wide eye lifts the lid clear');
+  });
+
+  test('a closed eye is actually covered', () => {
+    // Regression. The lids were short rectangles whose travel took them ACROSS
+    // the eye rather than over it, so at eyeOpen 0 the top third stayed visible
+    // and every blink in the app was wrong.
+    const eyeTop = EYE.l.cy - EYE.ry;
+    const eyeBottom = EYE.l.cy + EYE.ry;
+    const lidRestY = eyeTop - LID_HEIGHT;   // bottom edge sits on the eye when open
+
+    const { upper } = lidOffsets(0, 0);
+    const lidTop = lidRestY + upper;
+    const lidBottom = lidRestY + LID_HEIGHT + upper;
+
+    assert.ok(lidBottom >= eyeBottom, `lid bottom ${lidBottom} must reach past eye bottom ${eyeBottom}`);
+    assert.ok(lidTop <= eyeTop, `lid top ${lidTop} must still be above eye top ${eyeTop}`);
+  });
+
+  test('lid travel never exceeds the rectangle it travels in', () => {
+    assert.ok(lidOffsets(0, 0).upper < LID_HEIGHT,
+      'travel beyond the lid height reopens a gap above the eye');
+  });
+
+  test('closing is monotonic', () => {
+    let previous = -Infinity;
+    for (const open of [1, 0.8, 0.6, 0.4, 0.2, 0]) {
+      const { upper } = lidOffsets(open, 0);
+      assert.ok(upper >= previous, `lid moved back up between ${open} and the step before`);
+      previous = upper;
+    }
+  });
+
+  test('squint raises the lower lid without closing the eye', () => {
+    assert.equal(lidOffsets(1, 0).lower, 0);
+    const squinted = lidOffsets(1, 1).lower;
+    assert.ok(squinted > 0 && squinted < EYE.ry, 'a squint narrows the eye, it does not shut it');
   });
 });

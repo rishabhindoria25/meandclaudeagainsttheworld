@@ -16,25 +16,50 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export const PALETTE = {
-  furLight: '#f4a259',
-  fur: '#e8823b',
-  furDark: '#c9662a',
-  belly: '#fde3c4',
-  muzzle: '#fdf0de',
-  innerEar: '#f3b8a5',
-  nose: '#e0736b',
-  mouth: '#7d2f36',
-  tongue: '#f08a8a',
-  eyeWhite: '#fffdf8',
-  iris: '#57a05f',
-  irisDark: '#2f6b40',
-  pupil: '#20201f',
-  stripe: '#c9662a',
-  outline: '#5b3218',
-  blush: '#f2867e',
+  furLight: '#c3ced6',
+  fur: '#a2b0bb',
+  furMid: '#8e9daa',
+  furDark: '#71808d',
+  furShade: '#5f6e7b',
+  belly: '#f2f6f8',
+  muzzle: '#fbfdfe',
+  innerEar: '#f0b4b4',
+  innerEarDeep: '#d98e94',
+  nose: '#e58a8a',
+  noseShine: '#f5b9b9',
+  mouth: '#6d2b36',
+  tongue: '#ef8d94',
+  eyeWhite: '#ffffff',
+  eyeShade: '#dfe7ee',
+  iris: '#7cc36b',
+  irisMid: '#4f9c4f',
+  irisDark: '#2c6b38',
+  pupil: '#141a1f',
+  stripe: '#7b8a97',
+  outline: '#4b5760',
+  blush: '#f08a8a',
 };
 
-/** The static drawing. Parts that move carry ids and are looked up once. */
+/**
+ * The static drawing.
+ *
+ * Built for the soft, rounded, slightly three-dimensional look that the
+ * talking-pet apps use, which comes almost entirely from three things:
+ * gradients rather than flat fills, a consistent light source at the upper
+ * left, and contact shadows where forms overlap. A flat cartoon with an
+ * outline reads as a doodle no matter how good the proportions are.
+ *
+ * Proportions follow baby schema, which is what makes a drawn animal appealing
+ * rather than merely accurate: an oversized head, eyes that are very large and
+ * sit low on the face, a short muzzle, and small rounded limbs.
+ *
+ * This is original artwork. It is not, and is not meant to be, any existing
+ * commercial character.
+ *
+ * Landmarks are fixed, because everything else is built on them: eye centres at
+ * (163,176) and (257,176), nose at (210,228), mouth at (210,258), and the hit
+ * regions in touch.js. Restyle freely; move these and the rig comes apart.
+ */
 export function markup() {
   return `
 <svg id="tom-svg" viewBox="0 0 420 470" xmlns="${SVG_NS}" role="img"
@@ -43,114 +68,173 @@ export function markup() {
   <desc id="tom-desc">An animated cartoon cat who listens and responds. His expression reflects the conversation. All information is also available as text.</desc>
 
   <defs>
-    <radialGradient id="tom-fur-grad" cx="42%" cy="32%" r="78%">
+    <!-- Light from the upper left, consistently, on every form. -->
+    <radialGradient id="g-fur-head" cx="36%" cy="26%" r="82%">
       <stop offset="0%" stop-color="${PALETTE.furLight}"/>
-      <stop offset="100%" stop-color="${PALETTE.fur}"/>
+      <stop offset="52%" stop-color="${PALETTE.fur}"/>
+      <stop offset="100%" stop-color="${PALETTE.furDark}"/>
     </radialGradient>
-    <radialGradient id="tom-iris-grad" cx="45%" cy="38%" r="65%">
-      <stop offset="0%" stop-color="#8fd18f"/>
-      <stop offset="60%" stop-color="${PALETTE.iris}"/>
+    <radialGradient id="g-fur-body" cx="38%" cy="20%" r="88%">
+      <stop offset="0%" stop-color="${PALETTE.furLight}"/>
+      <stop offset="55%" stop-color="${PALETTE.fur}"/>
+      <stop offset="100%" stop-color="${PALETTE.furShade}"/>
+    </radialGradient>
+    <linearGradient id="g-belly" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${PALETTE.muzzle}"/>
+      <stop offset="100%" stop-color="#dfe8ed"/>
+    </linearGradient>
+    <linearGradient id="g-muzzle" x1="0.2" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e4edf2"/>
+    </linearGradient>
+    <radialGradient id="g-ear" cx="50%" cy="72%" r="72%">
+      <stop offset="0%" stop-color="${PALETTE.innerEarDeep}"/>
+      <stop offset="100%" stop-color="${PALETTE.innerEar}"/>
+    </radialGradient>
+    <radialGradient id="g-iris" cx="42%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="${PALETTE.iris}"/>
+      <stop offset="58%" stop-color="${PALETTE.irisMid}"/>
       <stop offset="100%" stop-color="${PALETTE.irisDark}"/>
     </radialGradient>
-    <clipPath id="tom-clip-eye-l"><ellipse cx="163" cy="176" rx="31" ry="34"/></clipPath>
-    <clipPath id="tom-clip-eye-r"><ellipse cx="257" cy="176" rx="31" ry="34"/></clipPath>
-    <clipPath id="tom-clip-mouth"><path id="tom-mouth-clip-path" d="M 190 262 L 230 262 L 230 262 L 190 262 Z"/></clipPath>
-    <filter id="tom-soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="4"/>
-    </filter>
+    <linearGradient id="g-sclera" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${PALETTE.eyeShade}"/>
+      <stop offset="38%" stop-color="${PALETTE.eyeWhite}"/>
+      <stop offset="100%" stop-color="${PALETTE.eyeWhite}"/>
+    </linearGradient>
+    <radialGradient id="g-nose" cx="38%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="${PALETTE.noseShine}"/>
+      <stop offset="100%" stop-color="${PALETTE.nose}"/>
+    </radialGradient>
+    <radialGradient id="g-ground" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2d3942" stop-opacity="0.26"/>
+      <stop offset="70%" stop-color="#2d3942" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#2d3942" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Contact shadow where the head sits on the body. -->
+    <linearGradient id="g-neck" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4b5760" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#4b5760" stop-opacity="0"/>
+    </linearGradient>
+
+    <clipPath id="tom-clip-eye-l"><ellipse cx="163" cy="176" rx="36" ry="39"/></clipPath>
+    <clipPath id="tom-clip-eye-r"><ellipse cx="257" cy="176" rx="36" ry="39"/></clipPath>
+    <clipPath id="tom-clip-mouth"><path id="tom-mouth-clip-path" d="M 190 264 L 230 264 Z"/></clipPath>
+    <clipPath id="clip-head"><ellipse cx="210" cy="176" rx="120" ry="108"/></clipPath>
+    <clipPath id="clip-body"><path d="M 210 248 C 292 248 326 322 326 384 C 326 432 282 452 210 452 C 138 452 94 432 94 384 C 94 322 128 248 210 248 Z"/></clipPath>
   </defs>
 
   <g id="tom-root">
-    <!-- shadow anchors the character to the ground so movement reads as weight -->
-    <ellipse id="tom-shadow" cx="210" cy="452" rx="104" ry="15" fill="#000" opacity="0.14" filter="url(#tom-soft)"/>
+    <ellipse id="tom-shadow" cx="210" cy="452" rx="112" ry="17" fill="url(#g-ground)"/>
 
     <g id="tom-body-group">
-      <path id="tom-tail" d="M 306 416 C 372 410 386 352 358 318"
-            fill="none" stroke="${PALETTE.fur}" stroke-width="27" stroke-linecap="round"/>
-      <path id="tom-tail-tip" d="M 356 322 C 352 314 352 306 356 300"
+      <path id="tom-tail" d="M 302 420 C 368 416 394 356 362 314"
+            fill="none" stroke="${PALETTE.furMid}" stroke-width="29" stroke-linecap="round"/>
+      <path id="tom-tail-tip" d="M 362 314 C 356 302 355 293 360 284"
             fill="none" stroke="${PALETTE.belly}" stroke-width="25" stroke-linecap="round"/>
 
-      <path id="tom-body" d="M 210 250 C 288 250 320 320 320 380 C 320 428 278 448 210 448 C 142 448 100 428 100 380 C 100 320 132 250 210 250 Z"
-            fill="url(#tom-fur-grad)" stroke="${PALETTE.outline}" stroke-width="3.5" stroke-linejoin="round"/>
-      <path id="tom-belly" d="M 210 300 C 258 300 276 344 276 382 C 276 416 246 430 210 430 C 174 430 144 416 144 382 C 144 344 162 300 210 300 Z"
-            fill="${PALETTE.belly}" opacity="0.92"/>
-      <path id="tom-paw-l" d="M 150 424 C 150 410 164 402 178 402 C 192 402 202 410 202 424 C 202 436 190 442 176 442 C 162 442 150 436 150 424 Z"
-            fill="${PALETTE.muzzle}" stroke="${PALETTE.outline}" stroke-width="3"/>
-      <path id="tom-paw-r" d="M 218 424 C 218 410 232 402 246 402 C 260 402 270 410 270 424 C 270 436 258 442 244 442 C 230 442 218 436 218 424 Z"
-            fill="${PALETTE.muzzle}" stroke="${PALETTE.outline}" stroke-width="3"/>
+      <path id="tom-body" d="M 210 248 C 292 248 326 322 326 384 C 326 432 282 452 210 452 C 138 452 94 432 94 384 C 94 322 128 248 210 248 Z"
+            fill="url(#g-fur-body)" stroke="${PALETTE.outline}" stroke-width="3" stroke-linejoin="round"/>
+      <path id="tom-belly" d="M 210 300 C 258 300 278 344 278 386 C 278 420 248 434 210 434 C 172 434 142 420 142 386 C 142 344 162 300 210 300 Z"
+            fill="url(#g-belly)"/>
+      <!-- the head casts onto the chest -->
+      <rect x="94" y="248" width="232" height="58" fill="url(#g-neck)" clip-path="url(#clip-body)"/>
+
+      <ellipse id="tom-paw-l" cx="176" cy="424" rx="28" ry="21"
+               fill="url(#g-muzzle)" stroke="${PALETTE.outline}" stroke-width="2.6"/>
+      <ellipse id="tom-paw-r" cx="244" cy="424" rx="28" ry="21"
+               fill="url(#g-muzzle)" stroke="${PALETTE.outline}" stroke-width="2.6"/>
+      <path d="M 168 417 v7 M 176 415 v9 M 184 417 v7" stroke="#c4d0d8" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <path d="M 236 417 v7 M 244 415 v9 M 252 417 v7" stroke="#c4d0d8" stroke-width="2.2" stroke-linecap="round" fill="none"/>
     </g>
 
     <g id="tom-head">
-      <!-- ears sit behind the skull so rotation tucks correctly -->
       <g id="tom-ear-l">
-        <path d="M 128 112 L 106 34 L 176 76 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3.5" stroke-linejoin="round"/>
-        <path d="M 132 104 L 118 56 L 162 82 Z" fill="${PALETTE.innerEar}"/>
+        <path d="M 126 118 C 116 72 112 44 118 30 C 132 34 160 56 180 84 Z"
+              fill="url(#g-fur-head)" stroke="${PALETTE.outline}" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M 133 108 C 126 76 124 58 128 48 C 138 52 156 68 168 88 Z" fill="url(#g-ear)"/>
       </g>
       <g id="tom-ear-r">
-        <path d="M 292 112 L 314 34 L 244 76 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3.5" stroke-linejoin="round"/>
-        <path d="M 288 104 L 302 56 L 258 82 Z" fill="${PALETTE.innerEar}"/>
+        <path d="M 294 118 C 304 72 308 44 302 30 C 288 34 260 56 240 84 Z"
+              fill="url(#g-fur-head)" stroke="${PALETTE.outline}" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M 287 108 C 294 76 296 58 292 48 C 282 52 264 68 252 88 Z" fill="url(#g-ear)"/>
       </g>
 
-      <ellipse id="tom-skull" cx="210" cy="176" rx="118" ry="106"
-               fill="url(#tom-fur-grad)" stroke="${PALETTE.outline}" stroke-width="3.5"/>
+      <ellipse id="tom-skull" cx="210" cy="176" rx="120" ry="108"
+               fill="url(#g-fur-head)" stroke="${PALETTE.outline}" stroke-width="3"/>
 
-      <path id="tom-stripe-1" d="M 176 76 C 190 92 196 104 198 118" fill="none" stroke="${PALETTE.stripe}" stroke-width="9" stroke-linecap="round" opacity="0.65"/>
-      <path id="tom-stripe-2" d="M 210 70 C 212 88 212 102 211 116" fill="none" stroke="${PALETTE.stripe}" stroke-width="9" stroke-linecap="round" opacity="0.65"/>
-      <path id="tom-stripe-3" d="M 244 76 C 230 92 224 104 222 118" fill="none" stroke="${PALETTE.stripe}" stroke-width="9" stroke-linecap="round" opacity="0.65"/>
+      <g clip-path="url(#clip-head)">
+        <!-- forehead tabby markings -->
+        <path id="tom-stripe-1" d="M 172 74 C 186 94 192 110 194 126" fill="none" stroke="${PALETTE.stripe}" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+        <path id="tom-stripe-2" d="M 210 66 C 212 88 212 108 211 124" fill="none" stroke="${PALETTE.stripe}" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+        <path id="tom-stripe-3" d="M 248 74 C 234 94 228 110 226 126" fill="none" stroke="${PALETTE.stripe}" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+        <!-- soft occlusion under the jaw -->
+        <ellipse cx="210" cy="300" rx="130" ry="42" fill="#4b5760" opacity="0.16"/>
+      </g>
 
-      <ellipse id="tom-blush-l" cx="132" cy="218" rx="26" ry="15" fill="${PALETTE.blush}" opacity="0"/>
-      <ellipse id="tom-blush-r" cx="288" cy="218" rx="26" ry="15" fill="${PALETTE.blush}" opacity="0"/>
+      <ellipse id="tom-blush-l" cx="118" cy="214" rx="28" ry="16" fill="${PALETTE.blush}" opacity="0"/>
+      <ellipse id="tom-blush-r" cx="302" cy="214" rx="28" ry="16" fill="${PALETTE.blush}" opacity="0"/>
 
       <g id="tom-eye-l">
-        <ellipse cx="163" cy="176" rx="31" ry="34" fill="${PALETTE.eyeWhite}" stroke="${PALETTE.outline}" stroke-width="3"/>
+        <ellipse cx="163" cy="176" rx="36" ry="39" fill="url(#g-sclera)" stroke="${PALETTE.outline}" stroke-width="2.8"/>
         <g clip-path="url(#tom-clip-eye-l)">
           <g id="tom-iris-l">
-            <circle cx="163" cy="176" r="21" fill="url(#tom-iris-grad)"/>
-            <ellipse id="tom-pupil-l" cx="163" cy="176" rx="10" ry="13" fill="${PALETTE.pupil}"/>
-            <circle cx="156" cy="168" r="6" fill="#fff" opacity="0.95"/>
-            <circle cx="170" cy="184" r="3" fill="#fff" opacity="0.6"/>
+            <circle cx="163" cy="180" r="26" fill="url(#g-iris)"/>
+            <ellipse id="tom-pupil-l" cx="163" cy="180" rx="13" ry="17" fill="${PALETTE.pupil}"/>
+            <circle cx="153" cy="168" r="8.5" fill="#fff" opacity="0.96"/>
+            <circle cx="172" cy="192" r="4.2" fill="#fff" opacity="0.55"/>
           </g>
-          <path id="tom-lid-upper-l" d="M 126 142 L 200 142 L 200 108 L 126 108 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3"/>
-          <path id="tom-lid-lower-l" d="M 126 210 L 200 210 L 200 246 L 126 246 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3"/>
+          <!-- shadow cast by the upper lid; this is most of what sells a round eye -->
+          <ellipse cx="163" cy="128" rx="40" ry="26" fill="#2d3942" opacity="0.16"/>
+          <path id="tom-lid-upper-l" d="M 121 17 L 205 17 L 205 137 Q 163 154 121 137 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="2.8" stroke-linejoin="round"/>
+          <path id="tom-lid-lower-l" d="M 121 215 Q 163 200 205 215 L 205 335 L 121 335 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="2.8" stroke-linejoin="round"/>
         </g>
       </g>
 
       <g id="tom-eye-r">
-        <ellipse cx="257" cy="176" rx="31" ry="34" fill="${PALETTE.eyeWhite}" stroke="${PALETTE.outline}" stroke-width="3"/>
+        <ellipse cx="257" cy="176" rx="36" ry="39" fill="url(#g-sclera)" stroke="${PALETTE.outline}" stroke-width="2.8"/>
         <g clip-path="url(#tom-clip-eye-r)">
           <g id="tom-iris-r">
-            <circle cx="257" cy="176" r="21" fill="url(#tom-iris-grad)"/>
-            <ellipse id="tom-pupil-r" cx="257" cy="176" rx="10" ry="13" fill="${PALETTE.pupil}"/>
-            <circle cx="250" cy="168" r="6" fill="#fff" opacity="0.95"/>
-            <circle cx="264" cy="184" r="3" fill="#fff" opacity="0.6"/>
+            <circle cx="257" cy="180" r="26" fill="url(#g-iris)"/>
+            <ellipse id="tom-pupil-r" cx="257" cy="180" rx="13" ry="17" fill="${PALETTE.pupil}"/>
+            <circle cx="247" cy="168" r="8.5" fill="#fff" opacity="0.96"/>
+            <circle cx="266" cy="192" r="4.2" fill="#fff" opacity="0.55"/>
           </g>
-          <path id="tom-lid-upper-r" d="M 220 142 L 294 142 L 294 108 L 220 108 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3"/>
-          <path id="tom-lid-lower-r" d="M 220 210 L 294 210 L 294 246 L 220 246 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="3"/>
+          <ellipse cx="257" cy="128" rx="40" ry="26" fill="#2d3942" opacity="0.16"/>
+          <path id="tom-lid-upper-r" d="M 215 17 L 299 17 L 299 137 Q 257 154 215 137 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="2.8" stroke-linejoin="round"/>
+          <path id="tom-lid-lower-r" d="M 215 215 Q 257 200 299 215 L 299 335 L 215 335 Z" fill="${PALETTE.fur}" stroke="${PALETTE.outline}" stroke-width="2.8" stroke-linejoin="round"/>
         </g>
       </g>
 
-      <path id="tom-brow-l" d="M 140 132 C 154 122 178 122 192 130" fill="none" stroke="${PALETTE.outline}" stroke-width="7" stroke-linecap="round"/>
-      <path id="tom-brow-r" d="M 280 132 C 266 122 242 122 228 130" fill="none" stroke="${PALETTE.outline}" stroke-width="7" stroke-linecap="round"/>
+      <path id="tom-brow-l" d="M 130 126 C 146 114 180 114 196 124" fill="none" stroke="${PALETTE.furShade}" stroke-width="7.5" stroke-linecap="round"/>
+      <path id="tom-brow-r" d="M 290 126 C 274 114 240 114 224 124" fill="none" stroke="${PALETTE.furShade}" stroke-width="7.5" stroke-linecap="round"/>
 
       <g id="tom-muzzle-group">
-        <ellipse cx="185" cy="248" rx="38" ry="30" fill="${PALETTE.muzzle}"/>
-        <ellipse cx="235" cy="248" rx="38" ry="30" fill="${PALETTE.muzzle}"/>
-        <path id="tom-nose" d="M 196 226 L 224 226 L 210 242 Z" fill="${PALETTE.nose}" stroke="${PALETTE.outline}" stroke-width="2.5" stroke-linejoin="round"/>
-        <path id="tom-philtrum" d="M 210 242 L 210 252" stroke="${PALETTE.outline}" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="184" cy="252" rx="42" ry="33" fill="url(#g-muzzle)"/>
+        <ellipse cx="236" cy="252" rx="42" ry="33" fill="url(#g-muzzle)"/>
+        <!-- whisker-pad dimples -->
+        <circle cx="170" cy="246" r="2" fill="#c8d4dc"/><circle cx="182" cy="240" r="2" fill="#c8d4dc"/><circle cx="178" cy="254" r="2" fill="#c8d4dc"/>
+        <circle cx="250" cy="246" r="2" fill="#c8d4dc"/><circle cx="238" cy="240" r="2" fill="#c8d4dc"/><circle cx="242" cy="254" r="2" fill="#c8d4dc"/>
 
-        <!-- mouth interior, teeth and tongue are clipped to the opening -->
+        <path id="tom-nose" d="M 194 220 C 194 216 198 214 210 214 C 222 214 226 216 226 220 C 226 228 218 238 210 238 C 202 238 194 228 194 220 Z"
+              fill="url(#g-nose)" stroke="${PALETTE.outline}" stroke-width="2.2" stroke-linejoin="round"/>
+        <path id="tom-philtrum" d="M 210 238 L 210 252" stroke="${PALETTE.furShade}" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
         <path id="tom-mouth-interior" d="" fill="${PALETTE.mouth}"/>
         <g clip-path="url(#tom-clip-mouth)">
-          <rect id="tom-teeth" x="180" y="250" width="60" height="9" rx="3" fill="#fffdf5" opacity="0"/>
-          <ellipse id="tom-tongue" cx="210" cy="278" rx="20" ry="12" fill="${PALETTE.tongue}" opacity="0"/>
+          <rect id="tom-teeth" x="184" y="252" width="52" height="9" rx="3.5" fill="#fffdf8" opacity="0"/>
+          <ellipse id="tom-tongue" cx="210" cy="280" rx="20" ry="12" fill="${PALETTE.tongue}" opacity="0"/>
         </g>
-        <path id="tom-mouth-line" d="" fill="none" stroke="${PALETTE.outline}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="tom-mouth-line" d="" fill="none" stroke="${PALETTE.outline}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
 
-        <g id="tom-whiskers-l" stroke="${PALETTE.outline}" stroke-width="2.6" stroke-linecap="round" opacity="0.8">
-          <path d="M 152 240 L 96 230"/><path d="M 150 252 L 92 252"/><path d="M 152 264 L 98 276"/>
+        <g id="tom-whiskers-l" stroke="#8d9ba7" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.8">
+          <path d="M 150 240 C 130 234 116 230 102 228"/>
+          <path d="M 148 252 C 126 252 112 252 98 253"/>
+          <path d="M 150 264 C 130 269 116 274 104 277"/>
         </g>
-        <g id="tom-whiskers-r" stroke="${PALETTE.outline}" stroke-width="2.6" stroke-linecap="round" opacity="0.8">
-          <path d="M 268 240 L 324 230"/><path d="M 270 252 L 328 252"/><path d="M 268 264 L 322 276"/>
+        <g id="tom-whiskers-r" stroke="#8d9ba7" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.8">
+          <path d="M 270 240 C 290 234 304 230 318 228"/>
+          <path d="M 272 252 C 294 252 308 252 322 253"/>
+          <path d="M 270 264 C 290 269 304 274 316 277"/>
         </g>
       </g>
     </g>
@@ -187,8 +271,8 @@ export function mount(container) {
  * Geometry
  * ------------------------------------------------------------------ */
 
-const EYE = { l: { cx: 163, cy: 176 }, r: { cx: 257, cy: 176 }, rx: 31, ry: 34 };
-const MOUTH = { cx: 210, cy: 256 };
+const EYE = { l: { cx: 163, cy: 176 }, r: { cx: 257, cy: 176 }, rx: 36, ry: 39 };
+const MOUTH = { cx: 210, cy: 258 };
 
 /**
  * Build the mouth opening and lip line from the current shape parameters.
@@ -224,17 +308,38 @@ export function mouthGeometry(p) {
 }
 
 /**
- * Eyelid offsets. `eyeOpen` of 1 sits the lids just outside the eye; 0 closes them.
- * @param {number} eyeOpen
- * @param {number} squint
+ * Eyelid offsets.
+ *
+ * The lids are tall rectangles whose inner edges rest exactly on the top and
+ * bottom of the eye when it is open, extending far enough away that they always
+ * cover it when they travel. The earlier version used short rectangles, which
+ * meant that at `eyeOpen: 0` the lid slid across the middle of the eye and left
+ * the top third showing — every blink in the app was wrong, and the "contented
+ * half-closed" look was a lid sitting in the wrong place rather than a lid.
+ *
+ * `LID_HEIGHT` must exceed the full travel, or the same bug returns.
+ *
+ * @param {number} eyeOpen 0 = shut, 1 = normal, >1 = wide
+ * @param {number} squint 0..1, raises the lower lid
  */
 export function lidOffsets(eyeOpen, squint = 0) {
   const openness = Math.max(0, Math.min(1.3, eyeOpen));
-  // The upper lid travels further than the lower, as a real eyelid does.
-  const upper = (1 - Math.min(1, openness)) * (EYE.ry * 2.05) + Math.max(0, openness - 1) * -8;
-  const lower = squint * EYE.ry * 0.62;
+  // Full travel takes the upper lid's bottom edge from the top of the eye to
+  // past the bottom of it: slightly more than the eye's full height.
+  const upper = (1 - Math.min(1, openness)) * (EYE.ry * 2.06) + Math.max(0, openness - 1) * -9;
+  const lower = squint * EYE.ry * 0.6;
   return { upper, lower };
 }
+
+/**
+ * Height of the lid shapes in the markup; the travel must stay under it.
+ *
+ * The lid's straight bottom edge rests on the top of the eye, and a shallow
+ * curve bulges ~17 units below that — so a lid at rest already covers a sliver
+ * of the eye, which is what stops a drawn eye reading as permanently startled.
+ */
+export const LID_HEIGHT = 120;
+export const LID_CURVE = 17;
 
 /**
  * Write a pose onto the mounted parts.
@@ -274,8 +379,9 @@ export function applyPose(parts, pose, motion = {}) {
   set(parts.lid_lower_l, 'transform', `translate(0 ${(-lids.lower).toFixed(2)})`);
   set(parts.lid_lower_r, 'transform', `translate(0 ${(-lids.lower).toFixed(2)})`);
 
-  const gx = (p.gazeX ?? 0) * 11;
-  const gy = (p.gazeY ?? 0) * 9;
+  // Larger eyes give the gaze more room to travel before the iris clips.
+  const gx = (p.gazeX ?? 0) * 13;
+  const gy = (p.gazeY ?? 0) * 11;
   set(parts.iris_l, 'transform', `translate(${gx.toFixed(2)} ${gy.toFixed(2)})`);
   set(parts.iris_r, 'transform', `translate(${gx.toFixed(2)} ${gy.toFixed(2)})`);
 
@@ -283,8 +389,8 @@ export function applyPose(parts, pose, motion = {}) {
   for (const side of ['l', 'r']) {
     const el = parts[`pupil_${side}`];
     if (!el) continue;
-    el.setAttribute('rx', (10 * pupil).toFixed(2));
-    el.setAttribute('ry', (13 * pupil).toFixed(2));
+    el.setAttribute('rx', (13 * pupil).toFixed(2));
+    el.setAttribute('ry', (17 * pupil).toFixed(2));
   }
 
   // --- brows ---
@@ -320,8 +426,20 @@ export function applyPose(parts, pose, motion = {}) {
   const swayAmount = (p.tailSway ?? 1);
   const tailX = Math.sin(sway) * 22 * swayAmount;
   const tailY = Math.cos(sway * 1.3) * 9 * swayAmount;
-  set(parts.tail, 'd', `M 306 416 C ${(372 + tailX * 0.4).toFixed(1)} ${(410 + tailY * 0.3).toFixed(1)} ${(386 + tailX).toFixed(1)} ${(352 + tailY).toFixed(1)} ${(358 + tailX * 1.3).toFixed(1)} ${(318 + tailY * 1.2).toFixed(1)}`);
-  set(parts.tail_tip, 'd', `M ${(356 + tailX * 1.3).toFixed(1)} ${(322 + tailY * 1.2).toFixed(1)} C ${(352 + tailX * 1.4).toFixed(1)} ${(314 + tailY * 1.3).toFixed(1)} ${(352 + tailX * 1.5).toFixed(1)} ${(306 + tailY * 1.4).toFixed(1)} ${(356 + tailX * 1.6).toFixed(1)} ${(300 + tailY * 1.5).toFixed(1)}`);
+
+  // The tip starts at exactly the tail's end point and continues its direction.
+  // Computing the join once, rather than writing two sets of literals that drift
+  // apart, is what stops the white tip detaching as the tail swings.
+  const tipX = 362 + tailX * 1.3;
+  const tipY = 314 + tailY * 1.2;
+  set(parts.tail, 'd',
+    `M 302 420 C ${(368 + tailX * 0.35).toFixed(1)} ${(416 + tailY * 0.3).toFixed(1)} `
+    + `${(394 + tailX).toFixed(1)} ${(356 + tailY).toFixed(1)} ${tipX.toFixed(1)} ${tipY.toFixed(1)}`);
+  set(parts.tail_tip, 'd',
+    `M ${tipX.toFixed(1)} ${tipY.toFixed(1)} `
+    + `C ${(tipX - 6 + tailX * 0.1).toFixed(1)} ${(tipY - 12).toFixed(1)} `
+    + `${(tipX - 7 + tailX * 0.2).toFixed(1)} ${(tipY - 21).toFixed(1)} `
+    + `${(tipX - 2 + tailX * 0.3).toFixed(1)} ${(tipY - 30).toFixed(1)}`);
 
   // Shadow narrows as the body rises, which sells the weight of the breath.
   set(parts.shadow, 'rx', (104 * (2 - breathScale)).toFixed(2));
