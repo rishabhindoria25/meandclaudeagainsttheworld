@@ -374,9 +374,50 @@ function mask(W, H, feather, draw) {
 }
 const ell = (x, cx, cy, rx, ry, rot = 0) => { x.beginPath(); x.ellipse(cx, cy, Math.max(1, rx), Math.max(1, ry), rot, 0, Math.PI * 2); x.fill(); };
 
-async function retouch(src, geo, areas, k = .7) {
+/* The retouch recipe Claude writes for this photo. Every value is a
+   0–1 strength (or a hex color) and is applied to the real pixels. */
+const EDIT_DEFAULT = {
+  skin_smoothing: .45, redness_reduction: .3, under_eye_brighten: .35, eye_clarity: .25,
+  brow_define: .3, brow_tint: null, lip_tint: null, lip_strength: .3, blush: null, blush_strength: 0,
+  hair_tint: null, hair_tint_strength: 0, hair_shine: .2, warmth: .15, brightness: .05, contrast: .2,
+};
+const HEX = /^#[0-9a-f]{6}$/i;
+function normalizeEdit(e, features) {
+  const out = { ...EDIT_DEFAULT }, on = new Set(features.map((f) => f.area));
+  if (e && typeof e === "object") for (const k in EDIT_DEFAULT) {
+    const v = e[k];
+    if (EDIT_DEFAULT[k] === null || /tint$|^blush$/.test(k)) out[k] = typeof v === "string" && HEX.test(v) ? v : null;
+    else if (isFinite(+v)) out[k] = clamp(+v, k === "warmth" || k === "brightness" ? -1 : 0, 1);
+  }
+  if (!on.has("skin")) { out.skin_smoothing *= .4; out.redness_reduction *= .4; }
+  if (!on.has("lips")) out.lip_strength *= .4;
+  if (!on.has("brows")) out.brow_define *= .4;
+  if (!on.has("hair")) { out.hair_tint_strength = 0; out.hair_shine *= .4; }
+  return out;
+}
+function describeEdit(e) {
+  const pct = (v) => Math.round(v * 100) + "%";
+  const rows = [];
+  if (e.skin_smoothing > .05) rows.push(["Skin evening", pct(e.skin_smoothing), null]);
+  if (e.redness_reduction > .05) rows.push(["Redness calmed", pct(e.redness_reduction), null]);
+  if (e.under_eye_brighten > .05) rows.push(["Under-eye lift", pct(e.under_eye_brighten), null]);
+  if (e.eye_clarity > .05) rows.push(["Eye clarity", pct(e.eye_clarity), null]);
+  if (e.brow_define > .05) rows.push(["Brow definition", pct(e.brow_define), e.brow_tint]);
+  if (e.lip_tint && e.lip_strength > .05) rows.push(["Lip tint", pct(e.lip_strength), e.lip_tint]);
+  if (e.blush && e.blush_strength > .05) rows.push(["Cheek color", pct(e.blush_strength), e.blush]);
+  if (e.hair_tint && e.hair_tint_strength > .05) rows.push(["Hair color", pct(e.hair_tint_strength), e.hair_tint]);
+  if (e.hair_shine > .05) rows.push(["Hair shine", pct(e.hair_shine), null]);
+  if (Math.abs(e.warmth) > .05) rows.push([e.warmth > 0 ? "Warmth" : "Cooler tone", pct(Math.abs(e.warmth)), null]);
+  if (Math.abs(e.brightness) > .05) rows.push([e.brightness > 0 ? "Brighter" : "Deeper", pct(Math.abs(e.brightness)), null]);
+  if (e.contrast > .05) rows.push(["Definition", pct(e.contrast), null]);
+  return rows;
+}
+const rgbOf = (hex) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const luma = (r, g, b) => .299 * r + .587 * g + .114 * b;
+
+async function retouch(src, geo, edit, k = 1) {
   const img = await loadImg(src);
-  const { W, H, box, p } = geo, fw = box.w, on = new Set(areas);
+  const { W, H, box, p } = geo, fw = box.w, E = edit;
   const base = canvasOf(W, H), bx = base.getContext("2d", { willReadFrequently: true });
   bx.drawImage(img, 0, 0, W, H);
   const o = bx.getImageData(0, 0, W, H).data;
@@ -385,41 +426,75 @@ async function retouch(src, geo, areas, k = .7) {
   const mouthC = { x: (p.mouth_left.x + p.mouth_right.x) / 2, y: (p.mouth_left.y + p.mouth_right.y) / 2 };
   const mouthW = Math.hypot(p.mouth_right.x - p.mouth_left.x, p.mouth_right.y - p.mouth_left.y);
   const tilt = Math.atan2(p.eye_right.y - p.eye_left.y, p.eye_right.x - p.eye_left.x);
+  const faceC = { x: box.x + box.w / 2, y: box.y + box.h * .55 };
 
   const skinM = mask(W, H, fe, (x) => {
-    ell(x, box.x + box.w / 2, box.y + box.h * .55, box.w * .45, box.h * .5, tilt);
+    ell(x, faceC.x, faceC.y, box.w * .45, box.h * .5, tilt);
     x.globalCompositeOperation = "destination-out";
     for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y, fw * .12, fw * .065, tilt);
     for (const e of [p.brow_left, p.brow_right]) ell(x, e.x, e.y, fw * .14, fw * .045, tilt);
     ell(x, mouthC.x, mouthC.y, mouthW * .62, fw * .09, tilt);
   });
-  const eyeM = mask(W, H, fe * 1.1, (x) => { for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y + fw * .075, fw * .1, fw * .038, tilt); });
+  const underM = mask(W, H, fe * 1.1, (x) => { for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y + fw * .075, fw * .1, fw * .038, tilt); });
+  const eyeM = mask(W, H, fe * .25, (x) => { for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y, fw * .085, fw * .035, tilt); });
   const lipM = mask(W, H, fe * .35, (x) => ell(x, mouthC.x, mouthC.y, mouthW * .52, fw * .055, tilt));
   const browM = mask(W, H, fe * .3, (x) => { for (const e of [p.brow_left, p.brow_right]) ell(x, e.x, e.y, fw * .12, fw * .03, tilt); });
+  const blushM = E.blush && E.blush_strength > 0 ? mask(W, H, fe * 2, (x) => {
+    for (const c of [p.cheek_left, p.cheek_right]) ell(x, c.x + (c.x - faceC.x) * .12, c.y - fw * .03, fw * .13, fw * .09, 0);
+  }) : null;
+  // Hair: the region around the head, minus the face, gated by similarity to the sampled hair color.
+  let hairM = null, hairRGB = null;
+  if (E.hair_shine > 0 || (E.hair_tint && E.hair_tint_strength > 0)) {
+    hairM = mask(W, H, fe, (x) => {
+      ell(x, faceC.x, box.y + box.h * .25, box.w * .78, box.h * .8, tilt);
+      x.globalCompositeOperation = "destination-out";
+      ell(x, faceC.x, faceC.y + box.h * .04, box.w * .44, box.h * .47, tilt);
+      x.fillRect(0, p.chin.y, W, H);
+    });
+    const r = Math.max(2, Math.round(fw * .03)), sx = Math.round(clamp(p.hair.x - r, 0, W - 2 * r)), sy = Math.round(clamp(p.hair.y - r, 0, H - 2 * r));
+    const d = bx.getImageData(sx, sy, 2 * r, 2 * r).data;
+    hairRGB = rgbOf(median(d));
+  }
+  const lipC = E.lip_tint ? rgbOf(E.lip_tint) : null, blC = E.blush ? rgbOf(E.blush) : null, brC = E.brow_tint ? rgbOf(E.brow_tint) : null, hC = E.hair_tint ? rgbOf(E.hair_tint) : null;
+  // Recolor toward a target hue while keeping the pixel's own light and shadow.
+  const tint = (px, c, a) => { const l = luma(px[0], px[1], px[2]) / Math.max(1, luma(c[0], c[1], c[2])); for (let j = 0; j < 3; j++) px[j] += (c[j] * l - px[j]) * a; };
 
-  const out = bx.createImageData(W, H), d = out.data;
-  for (let i = 0, px = 0; i < d.length; i += 4, px++) {
-    let r = o[i], g = o[i + 1], bl = o[i + 2];
-    const ms = on.has("skin") ? skinM[px] * k : 0;
+  const out = bx.createImageData(W, H), d = out.data, px = [0, 0, 0];
+  for (let i = 0, n = 0; i < d.length; i += 4, n++) {
+    px[0] = o[i]; px[1] = o[i + 1]; px[2] = o[i + 2];
+    const ms = skinM[n] * k;
     if (ms > 0) {
-      const sr = b[i] + (r - b[i]) * .4, sg = b[i + 1] + (g - b[i + 1]) * .4, sb = b[i + 2] + (bl - b[i + 2]) * .4;
-      r += (sr - r) * ms * .8; g += (sg - g) * ms * .8; bl += (sb - bl) * ms * .8;
-      r -= Math.max(0, r - (g + bl) / 2 - 30) * .25 * ms;
+      const s = E.skin_smoothing * ms * .85;
+      for (let j = 0; j < 3; j++) { const sm = b[i + j] + (px[j] - b[i + j]) * .4; px[j] += (sm - px[j]) * s; }
+      px[0] -= Math.max(0, px[0] - (px[1] + px[2]) / 2 - 28) * .45 * E.redness_reduction * ms;
     }
-    const me = (on.has("eyes") || on.has("skin")) ? eyeM[px] * k : 0;
-    if (me > 0) { const l = 1 + .12 * me; r *= l; g *= l; bl *= l * .99; }
-    const ml = on.has("lips") ? lipM[px] * k : 0;
+    if (blushM && blushM[n] > 0) tint(px, blC, Math.min(1, blushM[n] * E.blush_strength * k) * .32);
+    const mu = underM[n] * k * E.under_eye_brighten;
+    if (mu > 0) { const l = 1 + .18 * mu; px[0] *= l; px[1] *= l; px[2] *= l * .99; }
+    const me = eyeM[n] * k * E.eye_clarity;
+    if (me > 0) for (let j = 0; j < 3; j++) px[j] = 128 + (px[j] - 128) * (1 + .25 * me) + 6 * me;
+    const ml = lipM[n] * k;
     if (ml > 0) {
-      const gr = .299 * r + .587 * g + .114 * bl, s = 1 + .28 * ml;
-      r = gr + (r - gr) * s; g = gr + (g - gr) * s; bl = gr + (bl - gr) * s;
-      r *= 1 + .03 * ml; g *= 1 + .03 * ml; bl *= 1 + .03 * ml;
+      if (lipC) tint(px, lipC, ml * E.lip_strength * .6);
+      const g = luma(px[0], px[1], px[2]), s = 1 + .2 * ml * E.lip_strength;
+      for (let j = 0; j < 3; j++) px[j] = g + (px[j] - g) * s;
     }
-    const mb = on.has("brows") ? browM[px] * k : 0;
-    if (mb > 0) { const dd = 1 - .14 * mb; r *= dd; g *= dd; bl *= dd; }
-    r = 128 + (r - 128) * (1 + .035 * k) + 2 * k;
-    g = 128 + (g - 128) * (1 + .035 * k);
-    bl = 128 + (bl - 128) * (1 + .035 * k) - 1.5 * k;
-    d[i] = r; d[i + 1] = g; d[i + 2] = bl; d[i + 3] = 255;
+    const mb = browM[n] * k * E.brow_define;
+    if (mb > 0) { if (brC) tint(px, brC, mb * .35); const dd = 1 - .16 * mb; px[0] *= dd; px[1] *= dd; px[2] *= dd; }
+    if (hairM && hairM[n] > 0) {
+      const dist = Math.hypot(o[i] - hairRGB[0], o[i + 1] - hairRGB[1], o[i + 2] - hairRGB[2]);
+      const mh = hairM[n] * clamp(1 - (dist - 40) / 60, 0, 1) * k;
+      if (mh > 0) {
+        if (hC) tint(px, hC, mh * E.hair_tint_strength * .7);
+        const l = luma(px[0], px[1], px[2]) / 255, sh = E.hair_shine * mh * Math.max(0, l - .25) * .5;
+        for (let j = 0; j < 3; j++) px[j] += (255 - px[j]) * sh * .35;
+      }
+    }
+    const c = 1 + .08 * E.contrast * k, br = 10 * E.brightness * k, wm = 5 * E.warmth * k;
+    d[i] = 128 + (px[0] - 128) * c + br + wm;
+    d[i + 1] = 128 + (px[1] - 128) * c + br + wm * .3;
+    d[i + 2] = 128 + (px[2] - 128) * c + br - wm * .8;
+    d[i + 3] = 255;
   }
   bx.putImageData(out, 0, 0);
   return base.toDataURL("image/jpeg", .92);
@@ -465,9 +540,21 @@ Reply with only one JSON object in exactly this shape:
  "skin": {"type":"Likely combination","undertone":"warm|cool|neutral|olive","metrics":[{"name":"Hydration","score":64,"note":"short"}]},
  "palette": [{"name":"Rosy nude","hex":"#c98a7d","use":"Lip tint"}],
  "tips": [{"icon":"scissors|droplet|sun|brush|moon|water|sparkle|leaf","title":"short","detail":"short"}],
- "routine": {"am":[{"step":"","detail":""}],"pm":[{"step":"","detail":""}],"weekly":[""]}
+ "routine": {"am":[{"step":"","detail":""}],"pm":[{"step":"","detail":""}],"weekly":[""]},
+ "edit": {"skin_smoothing":0.45,"redness_reduction":0.3,"under_eye_brighten":0.35,"eye_clarity":0.25,"brow_define":0.3,"brow_tint":"#3b2a22","lip_tint":"#b9766b","lip_strength":0.35,"blush":"#c8806e","blush_strength":0.25,"hair_tint":null,"hair_tint_strength":0,"hair_shine":0.25,"warmth":0.15,"brightness":0.05,"contrast":0.2}
 }
-features: one per relevant area, most impactful first (omit facial_hair if not applicable). skin.metrics: 4-6. palette: 4-6 flattering tones. tips: 4.`;
+features: one per relevant area, most impactful first (omit facial_hair if not applicable). skin.metrics: 4-6. palette: 4-6 flattering tones. tips: 4.
+
+"edit" is your retouch recipe. The page applies it to the real photo to render the "after", so tune it to THIS person and photo like a careful professional retoucher:
+- Strengths are 0-1 (warmth and brightness are -1 to 1). Aim for a visible but believable result: most values between 0.15 and 0.6; never above 0.8.
+- skin_smoothing: evens tone while keeping 40% of texture; higher for visible unevenness or blemishes, low for already-even skin. redness_reduction: only as much redness as you see.
+- under_eye_brighten for shadows or tiredness; eye_clarity for dull or low-contrast eyes.
+- brow_define with brow_tint = a natural shade close to their brow or hair color, slightly deeper if brows are sparse.
+- lip_tint (from your palette, natural for their undertone) with lip_strength; subtle for makeup "none" (a balm-like tint at most 0.2).
+- blush (hex) and blush_strength: 0 and null for makeup "none"; otherwise a flattering cheek tone at 0.15-0.4.
+- hair_tint: null unless you recommend a color change; then the target hex and a strength of 0.2-0.5. hair_shine for dull hair.
+- warmth, brightness and contrast correct the photo's light: warm up a cold or grey photo, brighten a dim one, add contrast to a flat one.
+- The recipe cannot change hair length or shape, so don't count on it for those.`;
 }
 
 function arr(v) { return Array.isArray(v) ? v : []; }
@@ -500,6 +587,7 @@ function normalizePlan(raw) {
     },
     palette: arr(r.palette).filter((p) => p && /^#[0-9a-f]{6}$/i.test(p.hex)).slice(0, 6),
     tips: arr(r.tips).filter((t) => t && t.title).slice(0, 4),
+    edit: normalizeEdit(r.edit, arr(r.features).filter((f) => AREAS.includes(f?.area))),
     routine: { am: arr(r.routine?.am).filter((s) => s && s.step), pm: arr(r.routine?.pm).filter((s) => s && s.step), weekly: arr(r.routine?.weekly).map(String).filter(Boolean) },
   };
 }
@@ -507,7 +595,7 @@ function normalizePlan(raw) {
 const STAGES = [
   ['"geometry"', "Locating your features"], ['"summary"', "Reading your look"], ['"area":"hair"', "Hair"], ['"area":"brows"', "Brows"],
   ['"area":"eyes"', "Eyes"], ['"area":"skin"', "Skin"], ['"area":"lips"', "Lips"], ['"area":"facial_hair"', "Facial hair"],
-  ['"hair":{', "Choosing your cut"], ['"palette"', "Building your palette"], ['"routine"', "Writing your routine"],
+  ['"hair":{', "Choosing your cut"], ['"palette"', "Building your palette"], ['"routine"', "Writing your routine"], ['"edit"', "Writing your retouch recipe"],
 ];
 
 const ERR = {
@@ -544,7 +632,7 @@ async function createPlan() {
     const bad = { not_a_face: "We couldn't find a clear face in that photo. Try a front-facing selfie.", multiple_people: "There's more than one person in that photo. Try a solo selfie.", too_low_quality: "That photo is too dark, blurry or small. Try one in natural light." };
     if (bad[plan.suitability]) { state.error = bad[plan.suitability]; state.view = "start"; render(); return; }
     if (!plan.features.length) throw { code: "invalid_json" };
-    state.stages.push("Retouching on your device"); renderStages();
+    state.stages.push("Applying Claude’s retouch recipe"); renderStages();
     state.result = await buildResult(ph.url, ph.w, ph.h, plan, false);
     state.view = "results"; state.tab = plan.suitability === "likely_minor" ? "Plan" : "Report";
     render(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -561,8 +649,8 @@ async function buildResult(url, W, H, plan, isExample) {
   if (rect) { src = await cropUrl(url, rect); geo = shiftGeo(geo, rect); }
   const areas = plan.features.map((f) => f.area);
   const minor = plan.suitability === "likely_minor";
-  const after = minor ? src : await retouch(src, geo, areas, .7);
-  const res = { plan, before: src, after, geo, intensity: .7, tones: await tones(src, geo), details: {}, isExample, minor };
+  const after = minor ? src : await retouch(src, geo, plan.edit, 1);
+  const res = { plan, before: src, after, geo, intensity: 1, tones: await tones(src, geo), details: {}, isExample, minor };
   await refreshDetails(res);
   return res;
 }
@@ -720,7 +808,7 @@ function resultsHTML(res, isExample) {
   const scope = isExample ? "ex" : "me";
   return `<section data-scope="${scope}">
     ${isExample ? "" : `<div class="res-head"><div><div class="eyebrow">Your plan</div><h2>${esc(P.tagline)}</h2></div><button class="btn small" id="again">↺ New photo</button></div>
-      ${res.minor ? `<div class="notice" style="margin-top:16px">Glow is designed for adults, so this plan sticks to gentle skincare, sun protection and hair care.</div>` : `<div class="notice" style="margin-top:16px">Your “after” is an on-device retouch: skin, under-eyes, brows and lips. Hair changes are described in the plan rather than drawn.</div>`}`}
+      ${res.minor ? `<div class="notice" style="margin-top:16px">Glow is designed for adults, so this plan sticks to gentle skincare, sun protection and hair care.</div>` : `<div class="notice" style="margin-top:16px">Your “after” is your real photo, retouched from a recipe Claude wrote for you: skin, eyes, brows, lips, cheek color, hair tone and light. Haircut changes are described in the plan rather than drawn.</div>`}`}
     <div class="tabs" role="tablist">${tabs.map((t) => `<button role="tab" data-tab="${t}" aria-selected="${t === tab}">${t}</button>`).join("")}</div>
     <div class="tabpanel">${tabBody(res, tab, isExample)}</div>
     ${isExample ? "" : `<p class="foot">AI suggestions for grooming and styling, not medical advice.</p>`}
@@ -731,7 +819,8 @@ function tabBody(res, tab, isExample) {
   const P = res.plan;
   if (tab === "Report") return `<div class="toolbar"><div class="chips" role="radiogroup" aria-label="Report style">${Object.entries(THEMES).map(([k, t]) => `<button class="chip" role="radio" data-theme-pick="${k}" aria-pressed="${state.template === k}" aria-checked="${state.template === k}"><span class="swatch-dot" style="background:${k === "sage" ? t.band : t.bg}"></span> ${t.name}</button>`).join("")}</div>${state.downloads ? `<button class="btn small primary" data-save>↓ Save PNG</button>` : ""}</div><div class="cardwrap" data-card><div>${reportHTML(res, state.template)}</div></div><p class="muted" data-save-msg style="font-size:13px;margin-top:10px"></p>`;
   if (tab === "Compare") return `<div class="compare" data-compare><img src="${res.after}" alt="${esc(P.labels.after)}"><div class="before" style="clip-path:inset(0 50% 0 0)"><img src="${res.before}" alt="${esc(P.labels.before)}"></div><div class="bar" style="left:50%"><div class="knob">⇆</div></div><span class="tag" style="left:12px">${esc(P.labels.before)}</span><span class="tag" style="right:12px">${esc(P.labels.after)}</span><input type="range" min="0" max="100" value="50" aria-label="Reveal before and after" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"></div>
-    <label style="display:block;max-width:520px;margin:18px auto 0"><span style="display:flex;justify-content:space-between;font-size:14px"><span>Retouch strength</span><span class="muted" data-kval>${Math.round(res.intensity * 100)}%</span></span><input class="range" type="range" min="0" max="1" step="0.05" value="${res.intensity}" data-intensity></label>
+    <label style="display:block;max-width:520px;margin:18px auto 0"><span style="display:flex;justify-content:space-between;font-size:14px"><span>Recipe strength</span><span class="muted" data-kval>${Math.round(res.intensity * 100)}%</span></span><input class="range" type="range" min="0" max="1.5" step="0.05" value="${res.intensity}" data-intensity></label>
+    ${res.minor ? "" : `<div class="box" style="max-width:520px;margin:18px auto 0"><div class="label">Claude’s retouch recipe</div><div style="display:grid;grid-template-columns:1fr auto;gap:6px 16px;margin-top:10px;font-size:14px">${describeEdit(res.plan.edit).map(([n, v, hex]) => `<span>${hex ? `<span class="swatch-dot" style="background:${hex};vertical-align:-2px;margin-right:6px"></span>` : ""}${esc(n)}</span><span class="muted" style="font-variant-numeric:tabular-nums">${v}</span>`).join("")}</div></div>`}
     <p class="serif muted" style="text-align:center;font-size:21px;font-style:italic;margin-top:16px">${esc(P.overall_effect)}</p>`;
   if (tab === "Plan") return `${P.summary ? `<p class="muted" style="font-size:15.5px;max-width:70ch;margin:0 0 16px">${esc(P.summary)}</p>` : ""}${P.features.map((f, i) => `<div class="feat"><button aria-expanded="${i === 0}" data-feat>${res.details[f.area] ? `<img src="${res.details[f.area]}" alt="">` : ""}<span><span class="t" style="display:block">${esc(f.label)}</span><span class="cap">${esc(f.caption)}</span></span><span class="pill">${{ low: "Low effort", medium: "Some effort", high: "Higher effort" }[f.effort]}</span></button><div class="body" ${i === 0 ? "" : "hidden"}><div><div class="label">Now</div><ul>${f.current.map((c) => `<li>${esc(c)}</li>`).join("")}</ul><div class="label" style="margin-top:14px">Change</div><ul>${f.changes.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>${f.why ? `<div class="why"><strong>Why it works:</strong> ${esc(f.why)}</div>` : ""}</div><div><div class="label">How to</div><ol>${f.how_to.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>${f.products.length ? `<div class="label" style="margin-top:14px">Products</div>${f.products.map((p) => `<div class="prod"><strong>${esc(p.category)}</strong><div class="muted">${esc(p.why)}</div></div>`).join("")}` : ""}</div></div></div>`).join("")}`;
   if (tab === "Hair") return `<div class="grid g2"><div class="box" style="grid-column:1/-1"><div class="label">Recommended</div><div class="big">${esc(P.hair.style)}</div><p style="margin:10px 0 14px">${esc(P.hair.spec)}</p><button class="btn small" data-copy="${esc(P.hair.style + ": " + P.hair.spec)}">Copy for your stylist</button></div><div class="box"><div class="label">Color</div><p style="margin:8px 0 0">${esc(P.hair.color)}</p></div><div class="box"><div class="label">Also suits you</div>${P.hair.alternatives.map((a) => `<div style="margin-top:10px"><strong>${esc(a.name)}</strong><div class="muted" style="font-size:14px">${esc(a.description)}</div></div>`).join("")}</div></div>`;
@@ -816,7 +905,7 @@ function wireIntensity(input, res, sec) {
     clearTimeout(intensityTimer);
     intensityTimer = setTimeout(async () => {
       res.intensity = +input.value;
-      res.after = await retouch(res.before, res.geo, res.plan.features.map((f) => f.area), res.intensity);
+      res.after = await retouch(res.before, res.geo, res.plan.edit, res.intensity);
       await refreshDetails(res);
       const img = sec.querySelector("[data-compare] > img"); if (img) img.src = res.after;
     }, 220);
@@ -895,7 +984,7 @@ async function buildExample() {
   const svg = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(exampleSVG());
   const img = await loadImg(svg);
   const c = canvasOf(800, 1000); c.getContext("2d").drawImage(img, 0, 0);
-  const plan = normalizePlan({ ...DEMO_PLAN, geometry: EXAMPLE_GEOMETRY, summary: "An example plan for an illustrated portrait. Upload your own photo for a plan written for you." });
+  const plan = normalizePlan({ ...DEMO_PLAN, edit: { skin_smoothing: .55, redness_reduction: .6, under_eye_brighten: .55, eye_clarity: .3, brow_define: .4, brow_tint: "#2e211b", lip_tint: "#b86f67", lip_strength: .4, blush: "#c97b68", blush_strength: .3, hair_tint: null, hair_tint_strength: 0, hair_shine: .35, warmth: .2, brightness: .08, contrast: .25 }, geometry: EXAMPLE_GEOMETRY, summary: "An example plan for an illustrated portrait. Upload your own photo for a plan written for you." });
   state.example = await buildResult(c.toDataURL("image/jpeg", .92), 800, 1000, plan, true);
   state.exTab = "Report";
   if (state.view === "start") render();
