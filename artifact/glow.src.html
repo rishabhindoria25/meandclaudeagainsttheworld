@@ -1,0 +1,902 @@
+<title>Glow</title>
+<style>
+/*FONTS*/
+:root {
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --surface-2: #f2ede5;
+  --line: #e4ddd2;
+  --ink: #1d1a17;
+  --muted: #6f675e;
+  --accent: #a8683a;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+  --serif: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --sans: "Inter Glow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #100e0c; --surface: #191613; --surface-2: #231f1b; --line: #332d28;
+    --ink: #f3ede6; --muted: #a79e94; --accent: #e0a36f; --accent-ink: #1a120c; --danger: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #100e0c; --surface: #191613; --surface-2: #231f1b; --line: #332d28;
+  --ink: #f3ede6; --muted: #a79e94; --accent: #e0a36f; --accent-ink: #1a120c; --danger: #ff8a80;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 0 72px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.serif { font-family: var(--serif); }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); }
+.label { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+nav.top { display: flex; align-items: center; justify-content: space-between; padding-block: 18px; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 26px; background: none; border: 0; padding: 0; }
+.brand i { width: 30px; height: 30px; border-radius: 99px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-style: normal; }
+.privacy { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 99px; padding: 12px 22px; font-weight: 500; border: 1px solid var(--line); background: transparent; }
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover:not(:disabled) { background: var(--ink); opacity: .88; }
+.btn.small { padding: 8px 14px; font-size: 13.5px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 6px 13px; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Start */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: start; padding-block: 28px 8px; }
+.hero h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(44px, 7vw, 76px); line-height: 1; letter-spacing: -.01em; margin-top: 14px; }
+.hero h1 em { color: var(--accent); }
+.hero p.lede { font-size: 17.5px; color: var(--muted); max-width: 32em; margin: 22px 0 0; }
+.ticks { list-style: none; padding: 0; margin: 26px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; font-size: 14px; max-width: 34em; }
+.ticks li { display: flex; gap: 8px; }
+.ticks li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 22px; }
+.drop { border: 2px dashed var(--line); border-radius: 18px; padding: 26px 18px; text-align: center; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.drop .glyph { width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 99px; background: var(--surface-2); color: var(--accent); display: grid; place-items: center; font-size: 22px; }
+.drop h3 { font-family: var(--serif); font-weight: 500; font-size: 25px; }
+.thumb { display: flex; gap: 14px; align-items: center; text-align: left; }
+.thumb img { width: 74px; height: 92px; object-fit: cover; border-radius: 12px; }
+.prefs { display: grid; gap: 16px; margin-top: 20px; }
+.row2 { display: grid; grid-template-columns: 150px 1fr; gap: 12px; }
+select, input[type="text"] { width: 100%; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.notice { display: flex; gap: 8px; align-items: flex-start; background: var(--surface-2); border-radius: 14px; padding: 11px 14px; font-size: 13.5px; }
+.notice.err { background: color-mix(in srgb, var(--danger) 9%, transparent); color: var(--danger); }
+.fine { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
+
+/* Working */
+.working { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 40px; padding-block: 24px; align-items: start; }
+.scan { position: relative; border-radius: 22px; overflow: hidden; background: var(--surface-2); }
+.scan img { display: block; width: 100%; }
+.scan::after { content: ""; position: absolute; inset: 0 0 auto; height: 35%; background: linear-gradient(transparent, rgba(255,255,255,.3), transparent); animation: scan 2.4s ease-in-out infinite; }
+@keyframes scan { 0% { transform: translateY(-40%); } 100% { transform: translateY(300%); } }
+.stages { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 12px; }
+.stages li { display: flex; align-items: center; gap: 12px; color: var(--muted); }
+.stages li b { width: 22px; height: 22px; border-radius: 99px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 12px; }
+.stages li.now { color: var(--ink); font-weight: 500; }
+.stages li.now b { background: transparent; border: 2px solid var(--accent); }
+.stages li.now b::after { content: ""; width: 7px; height: 7px; border-radius: 99px; background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* Results */
+.res-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px; padding-top: 12px; }
+.res-head h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 5vw, 50px); line-height: 1.05; margin-top: 8px; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); margin-top: 22px; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 16px; font-weight: 500; font-size: 14px; color: var(--muted); white-space: nowrap; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); }
+.tabpanel { padding-top: 22px; }
+.toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.swatch-dot { width: 13px; height: 13px; border-radius: 99px; border: 1px solid rgba(0,0,0,.2); display: inline-block; }
+.cardwrap { width: 100%; overflow: hidden; border-radius: 16px; box-shadow: 0 22px 60px -24px rgba(0,0,0,.4); }
+.cardwrap > div { transform-origin: top left; }
+
+.compare { position: relative; max-width: 520px; margin: 0 auto; border-radius: 22px; overflow: hidden; cursor: ew-resize; user-select: none; touch-action: none; background: var(--surface-2); }
+.compare img { display: block; width: 100%; pointer-events: none; }
+.compare .before { position: absolute; inset: 0; }
+.compare .bar { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,.45); pointer-events: none; }
+.compare .knob { position: absolute; top: 50%; left: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 99px; background: #fff; color: #111; display: grid; place-items: center; font-size: 14px; }
+.compare .tag { position: absolute; top: 12px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; }
+.compare:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+.range { width: 100%; accent-color: var(--accent); }
+
+.feat { border: 1px solid var(--line); background: var(--surface); border-radius: 18px; overflow: hidden; }
+.feat + .feat { margin-top: 10px; }
+.feat > button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px; background: none; border: 0; text-align: left; }
+.feat > button img { width: 76px; height: 52px; object-fit: cover; border-radius: 10px; flex: none; }
+.feat .t { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
+.feat .cap { font-size: 13.5px; color: var(--muted); }
+.feat .pill { margin-left: auto; font-size: 12px; background: var(--surface-2); border-radius: 99px; padding: 4px 10px; color: var(--muted); white-space: nowrap; }
+.feat .body { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; border-top: 1px solid var(--line); padding: 18px; }
+.feat ul, .feat ol { margin: 6px 0 0; padding-left: 18px; }
+.feat li { margin: 4px 0; }
+.why { background: var(--surface-2); border-radius: 12px; padding: 11px 13px; font-size: 14px; margin-top: 14px; }
+.prod { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; margin-top: 8px; }
+
+.grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g5 { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.box { border: 1px solid var(--line); background: var(--surface); border-radius: 18px; padding: 18px; }
+.big { font-family: var(--serif); font-size: 30px; line-height: 1.1; margin-top: 4px; }
+.ring { text-align: center; }
+.ring svg { width: 84px; height: 84px; }
+.pal { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
+.pal .c { height: 76px; display: flex; align-items: end; padding: 8px; font: 12px ui-monospace, Menlo, monospace; }
+.pal .n { padding: 10px 12px; font-size: 13.5px; }
+.check { display: flex; gap: 12px; align-items: flex-start; padding: 8px; border-radius: 12px; cursor: pointer; }
+.check:hover { background: var(--surface-2); }
+.check input { margin-top: 4px; width: 17px; height: 17px; accent-color: var(--accent); }
+.check.done span { text-decoration: line-through; color: var(--muted); }
+.example-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 44px 0 14px; border-top: 1px solid var(--line); padding-top: 26px; }
+.foot { text-align: center; font-size: 12px; color: var(--muted); margin-top: 44px; }
+
+@media (max-width: 860px) {
+  .hero, .working { grid-template-columns: 1fr; gap: 28px; }
+  .feat .body, .g2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .ticks { grid-template-columns: 1fr; }
+  .row2 { grid-template-columns: 1fr; }
+  .feat .pill { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <nav class="top">
+    <button class="brand" id="home" aria-label="Glow, start over"><i>✦</i>Glow</button>
+    <span class="privacy">🔒 Your photo stays in this page except when sent to Claude</span>
+  </nav>
+  <main id="app"></main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Glow — personalized aesthetic enhancement plans, in an artifact.
+   Claude (via the viewer's own account) reads the photo, locates the
+   facial features, and writes the plan. Everything else — reframing,
+   the landmark-guided retouch, detail crops, tone sampling and the
+   report card — happens right here in the page.
+   ============================================================ */
+
+const AREAS = ["hair", "brows", "eyes", "skin", "lips", "facial_hair"];
+const AREA_LABEL = { hair: "Hair", brows: "Brows", eyes: "Eyes", skin: "Skin", lips: "Lips", facial_hair: "Facial hair" };
+const VIBES = [["natural", "Natural"], ["polished", "Polished"], ["bold", "Bold"], ["low-maintenance", "Low-maintenance"]];
+const MAKEUP = [["none", "No makeup"], ["minimal", "Minimal"], ["full", "Full glam OK"]];
+const LANGS = ["English", "Español", "Français", "Deutsch", "Português", "Italiano", "हिन्दी", "日本語", "한국어", "中文", "العربية"];
+const TIP_ICON = { scissors: "✂", droplet: "💧", sun: "☀", brush: "🖌", moon: "☾", water: "◌", sparkle: "✦", leaf: "❦" };
+const DEMO_PLAN = /*DEMO_PLAN*/null;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("glow:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("glow:" + k, JSON.stringify(v)); } catch {} },
+};
+
+const state = {
+  view: "start",            // start | working | results
+  photo: null,              // {url, blob, w, h}
+  prefs: Object.assign({ vibe: "natural", makeup: "minimal", language: "English", focus: [], notes: "" }, store.get("prefs", {}), { notes: "" }),
+  stages: [],
+  error: null,
+  result: null,             // the user's result
+  example: null,            // the illustrated example
+  tab: "Report",
+  template: store.get("template", "editorial"),
+  sample: undefined,        // resolved capability or null
+  imagesOK: false,
+  downloads: null,
+  ctl: null,
+};
+
+/* ---------------- Capabilities ---------------- */
+(async () => {
+  try {
+    const s = await window.claude?.use?.("sample");
+    state.sample = s ?? null;
+    if (s) {
+      const lim = await s.limits().catch(() => null);
+      state.imagesOK = !!lim?.images;
+    }
+  } catch { state.sample = null; }
+  try { state.downloads = (await window.claude?.use?.("downloads")) ?? null; } catch { state.downloads = null; }
+  render();
+})();
+
+/* ---------------- Images ---------------- */
+function loadImg(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+function canvasOf(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+function toBlob(c, q = 0.9) { return new Promise((r) => c.toBlob(r, "image/jpeg", q)); }
+
+async function normalizePhoto(file) {
+  if (!file || !/^image\//.test(file.type)) throw new Error("That file isn't an image. Try a JPEG, PNG or WebP.");
+  if (file.size > 25e6) throw new Error("That image is over 25 MB. Try a smaller one.");
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { throw new Error("This browser couldn't read that image (HEIC?). Export it as JPEG and try again."); }
+  const s = Math.min(1, 1536 / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
+  const c = canvasOf(w, h), x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(bmp, 0, 0, w, h);
+  bmp.close?.();
+  const blob = await toBlob(c, 0.9);   // re-encoding strips EXIF/GPS
+  return { url: c.toDataURL("image/jpeg", 0.9), blob, w, h };
+}
+
+async function cropUrl(src, r, outW) {
+  const img = await loadImg(src);
+  const ow = Math.round(outW ?? r.w), oh = Math.round(ow * r.h / r.w);
+  const c = canvasOf(ow, oh), x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(img, r.x, r.y, r.w, r.h, 0, 0, ow, oh);
+  return c.toDataURL("image/jpeg", 0.9);
+}
+
+/* ---------------- Face geometry ----------------
+   Claude returns normalized feature points; everything else derives here. */
+const PTS = ["hair", "brow_left", "brow_right", "eye_left", "eye_right", "nose_tip", "mouth_left", "mouth_right", "cheek_left", "cheek_right", "chin"];
+
+function toGeo(g, W, H) {
+  const fb = g?.face_box ?? {};
+  const box = { x: clamp(+fb.x || .3, 0, 1) * W, y: clamp(+fb.y || .25, 0, 1) * H, w: clamp(+fb.w || .4, .02, 1) * W, h: clamp(+fb.h || .4, .02, 1) * H };
+  const p = {};
+  const def = {
+    hair: [.5, -.12], brow_left: [.3, .28], brow_right: [.7, .28], eye_left: [.32, .38], eye_right: [.68, .38], nose_tip: [.5, .6],
+    mouth_left: [.38, .78], mouth_right: [.62, .78], cheek_left: [.25, .6], cheek_right: [.75, .6], chin: [.5, .98],
+  };
+  for (const k of PTS) {
+    const q = g?.points?.[k];
+    p[k] = q && isFinite(+q.x) && isFinite(+q.y)
+      ? { x: clamp(+q.x, 0, 1) * W, y: clamp(+q.y, 0, 1) * H }
+      : { x: box.x + def[k][0] * box.w, y: box.y + def[k][1] * box.h };
+  }
+  return { W, H, box, p };
+}
+
+function shiftGeo(geo, r) {
+  const p = {};
+  for (const k in geo.p) p[k] = { x: geo.p[k].x - r.x, y: geo.p[k].y - r.y };
+  return { W: r.w, H: r.h, box: { ...geo.box, x: geo.box.x - r.x, y: geo.box.y - r.y }, p };
+}
+
+function portraitRect(geo) {
+  const { W, H, box } = geo;
+  if (box.w / W > .42) return null;
+  let cw = Math.min(W, box.w * 2.7), ch = Math.min(H, cw * 5 / 4);
+  cw = Math.min(cw, ch * 4 / 5);
+  const cx = box.x + box.w / 2, cy = box.y + box.h * .5;
+  return {
+    x: Math.round(clamp(cx - cw / 2, 0, W - cw)), y: Math.round(clamp(cy - ch * .45, 0, H - ch)),
+    w: Math.round(cw), h: Math.round(ch),
+  };
+}
+
+function anchors(geo) {
+  const { p, box } = geo, fw = box.w;
+  const inside = (q) => ({ x: clamp(q.x, 6, geo.W - 6), y: clamp(q.y, 6, geo.H - 6) });
+  return {
+    hair: inside(p.hair),
+    brows: inside(p.brow_left),
+    eyes: inside(p.eye_left),
+    skin: inside(p.cheek_right),
+    lips: inside(p.mouth_right),
+    facial_hair: inside({ x: (p.chin.x + p.mouth_right.x) / 2, y: p.chin.y - fw * .08 }),
+  };
+}
+
+function detailRects(geo) {
+  const { p, box, W, H } = geo, fw = box.w;
+  const around = (c, cw) => {
+    cw = Math.min(cw, W); const ch = Math.min(cw * 2 / 3, H);
+    return { x: clamp(c.x - cw / 2, 0, W - cw), y: clamp(c.y - ch / 2, 0, H - ch), w: cw, h: ch };
+  };
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  return {
+    hair: around({ x: box.x + box.w / 2, y: Math.min(p.hair.y, box.y) + fw * .05 }, fw * 1.25),
+    brows: around({ x: mid(p.brow_left, p.brow_right).x, y: mid(p.brow_left, p.brow_right).y + fw * .04 }, fw * .95),
+    eyes: around(p.eye_left, fw * .5),
+    skin: around({ x: p.cheek_right.x - fw * .03, y: p.cheek_right.y }, fw * .5),
+    lips: around(mid(p.mouth_left, p.mouth_right), fw * .55),
+    facial_hair: around({ x: p.chin.x, y: p.chin.y - fw * .1 }, fw * .8),
+  };
+}
+
+function median(data) {
+  const r = [], g = [], b = [];
+  for (let i = 0; i < data.length; i += 4) { if (data[i + 3] < 200) continue; r.push(data[i]); g.push(data[i + 1]); b.push(data[i + 2]); }
+  if (!r.length) return "#888888";
+  const m = (a) => a.sort((x, y) => x - y)[a.length >> 1];
+  return "#" + [m(r), m(g), m(b)].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+async function tones(src, geo) {
+  const img = await loadImg(src);
+  const c = canvasOf(geo.W, geo.H), x = c.getContext("2d", { willReadFrequently: true });
+  x.drawImage(img, 0, 0);
+  const at = (q, r) => {
+    const sx = Math.round(clamp(q.x - r, 0, geo.W - 2)), sy = Math.round(clamp(q.y - r, 0, geo.H - 2));
+    const s = Math.max(2, Math.round(r * 2));
+    return median(x.getImageData(sx, sy, Math.min(s, geo.W - sx), Math.min(s, geo.H - sy)).data);
+  };
+  const r = geo.box.w * .03, p = geo.p;
+  return {
+    skin: at(p.cheek_right, r * 1.4),
+    hair: at(p.hair, r),
+    lips: at({ x: (p.mouth_left.x + p.mouth_right.x) / 2, y: (p.mouth_left.y + p.mouth_right.y) / 2 + geo.box.w * .03 }, r * .5),
+    brows: at(p.brow_left, r * .4),
+  };
+}
+
+/* ---------------- On-device retouch ----------------
+   Feathered elliptical masks from the feature points. Evens skin while
+   keeping 40% of fine texture, lifts under-eyes, adds lip color and
+   brow definition, and a touch of global warmth. Never moves pixels. */
+function blurCanvas(src, radius) {
+  const f = Math.max(2, Math.round(radius));
+  let cur = src;
+  for (let i = 0; i < 2; i++) {
+    const sw = Math.max(1, Math.round(src.width / f)), sh = Math.max(1, Math.round(src.height / f));
+    const s = canvasOf(sw, sh), sx = s.getContext("2d"); sx.imageSmoothingQuality = "high"; sx.drawImage(cur, 0, 0, sw, sh);
+    const b = canvasOf(src.width, src.height), bx = b.getContext("2d", { willReadFrequently: true }); bx.imageSmoothingQuality = "high"; bx.drawImage(s, 0, 0, src.width, src.height);
+    cur = b;
+  }
+  return cur;
+}
+function mask(W, H, feather, draw) {
+  const c = canvasOf(W, H), x = c.getContext("2d");
+  x.fillStyle = "#fff"; draw(x);
+  const a = blurCanvas(c, feather).getContext("2d").getImageData(0, 0, W, H).data;
+  const m = new Float32Array(W * H);
+  for (let i = 0; i < m.length; i++) m[i] = a[i * 4 + 3] / 255;
+  return m;
+}
+const ell = (x, cx, cy, rx, ry, rot = 0) => { x.beginPath(); x.ellipse(cx, cy, Math.max(1, rx), Math.max(1, ry), rot, 0, Math.PI * 2); x.fill(); };
+
+async function retouch(src, geo, areas, k = .7) {
+  const img = await loadImg(src);
+  const { W, H, box, p } = geo, fw = box.w, on = new Set(areas);
+  const base = canvasOf(W, H), bx = base.getContext("2d", { willReadFrequently: true });
+  bx.drawImage(img, 0, 0, W, H);
+  const o = bx.getImageData(0, 0, W, H).data;
+  const b = blurCanvas(base, fw * .012).getContext("2d").getImageData(0, 0, W, H).data;
+  const fe = fw * .025;
+  const mouthC = { x: (p.mouth_left.x + p.mouth_right.x) / 2, y: (p.mouth_left.y + p.mouth_right.y) / 2 };
+  const mouthW = Math.hypot(p.mouth_right.x - p.mouth_left.x, p.mouth_right.y - p.mouth_left.y);
+  const tilt = Math.atan2(p.eye_right.y - p.eye_left.y, p.eye_right.x - p.eye_left.x);
+
+  const skinM = mask(W, H, fe, (x) => {
+    ell(x, box.x + box.w / 2, box.y + box.h * .55, box.w * .45, box.h * .5, tilt);
+    x.globalCompositeOperation = "destination-out";
+    for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y, fw * .12, fw * .065, tilt);
+    for (const e of [p.brow_left, p.brow_right]) ell(x, e.x, e.y, fw * .14, fw * .045, tilt);
+    ell(x, mouthC.x, mouthC.y, mouthW * .62, fw * .09, tilt);
+  });
+  const eyeM = mask(W, H, fe * 1.1, (x) => { for (const e of [p.eye_left, p.eye_right]) ell(x, e.x, e.y + fw * .075, fw * .1, fw * .038, tilt); });
+  const lipM = mask(W, H, fe * .35, (x) => ell(x, mouthC.x, mouthC.y, mouthW * .52, fw * .055, tilt));
+  const browM = mask(W, H, fe * .3, (x) => { for (const e of [p.brow_left, p.brow_right]) ell(x, e.x, e.y, fw * .12, fw * .03, tilt); });
+
+  const out = bx.createImageData(W, H), d = out.data;
+  for (let i = 0, px = 0; i < d.length; i += 4, px++) {
+    let r = o[i], g = o[i + 1], bl = o[i + 2];
+    const ms = on.has("skin") ? skinM[px] * k : 0;
+    if (ms > 0) {
+      const sr = b[i] + (r - b[i]) * .4, sg = b[i + 1] + (g - b[i + 1]) * .4, sb = b[i + 2] + (bl - b[i + 2]) * .4;
+      r += (sr - r) * ms * .8; g += (sg - g) * ms * .8; bl += (sb - bl) * ms * .8;
+      r -= Math.max(0, r - (g + bl) / 2 - 30) * .25 * ms;
+    }
+    const me = (on.has("eyes") || on.has("skin")) ? eyeM[px] * k : 0;
+    if (me > 0) { const l = 1 + .12 * me; r *= l; g *= l; bl *= l * .99; }
+    const ml = on.has("lips") ? lipM[px] * k : 0;
+    if (ml > 0) {
+      const gr = .299 * r + .587 * g + .114 * bl, s = 1 + .28 * ml;
+      r = gr + (r - gr) * s; g = gr + (g - gr) * s; bl = gr + (bl - gr) * s;
+      r *= 1 + .03 * ml; g *= 1 + .03 * ml; bl *= 1 + .03 * ml;
+    }
+    const mb = on.has("brows") ? browM[px] * k : 0;
+    if (mb > 0) { const dd = 1 - .14 * mb; r *= dd; g *= dd; bl *= dd; }
+    r = 128 + (r - 128) * (1 + .035 * k) + 2 * k;
+    g = 128 + (g - 128) * (1 + .035 * k);
+    bl = 128 + (bl - 128) * (1 + .035 * k) - 1.5 * k;
+    d[i] = r; d[i + 1] = g; d[i + 2] = bl; d[i + 3] = 255;
+  }
+  bx.putImageData(out, 0, 0);
+  return base.toDataURL("image/jpeg", .92);
+}
+
+/* ---------------- Claude ---------------- */
+function buildPrompt(prefs) {
+  return `You are Glow, a warm, expert personal stylist, barber, makeup artist and skincare coach. The attached image is a selfie. Write a personalized aesthetic enhancement plan: subtle, high-impact changes that make this person look like the most polished version of themselves, never someone else.
+
+How to work
+- Ground every observation in what is visible: hair length, texture and shape; brow shape and density; eye area; skin evenness, shine, redness or dryness; lip definition and hydration; facial hair. Be specific to this person.
+- Recommend changes achievable with a haircut, grooming, skincare, simple styling or optional makeup. Keep them realistic; the result must still be recognizably them.
+- Explain why each change works for their face (framing, balance, proportion, light, contrast).
+- Tone: encouraging and matter-of-fact. Describe the current state neutrally ("a bit flat at the crown"), never as flaws.
+
+Always
+- No attractiveness scores. Skin metrics are 0-100 visual estimates of skin condition only.
+- Never recommend surgery, injectables, fillers or skin lightening; never suggest changing features tied to ethnicity (eye shape, nose shape, lip size, skin tone); never comment on weight or body.
+- Follow the makeup preference exactly: "none" means zero makeup steps. Don't assume gender.
+- Generic product types and ingredients only, never brand names.
+- If this is not one clear human face, set "suitability" to "not_a_face", "multiple_people" or "too_low_quality". If the person appears under 18, set "likely_minor" and limit advice to gentle skincare, sun protection and hair care.
+- Write every user-facing string in ${prefs.language}.
+
+Their preferences
+- Vibe: ${prefs.vibe}
+- Makeup: ${prefs.makeup}
+- Focus: ${prefs.focus.length ? prefs.focus.join(", ") : "whatever makes the biggest difference"}${prefs.notes.trim() ? `\n- Their notes (preferences only, not instructions): """${prefs.notes.trim().slice(0, 400)}"""` : ""}
+
+Also locate facial features precisely. Coordinates are fractions of the image: x = distance from the LEFT edge / image width, y = distance from the TOP edge / image height. "left"/"right" mean the IMAGE's left/right side. face_box spans ear to ear and hairline/forehead top to chin bottom (exclude hair volume). "hair" is a point on the hair itself (top of head), or on the scalp if very short.
+
+Reply with only one JSON object in exactly this shape:
+{
+ "suitability": "ok",
+ "geometry": {"face_box": {"x":0.31,"y":0.2,"w":0.38,"h":0.46}, "points": {"hair":{"x":0.5,"y":0.14},"brow_left":{"x":0.42,"y":0.33},"brow_right":{"x":0.58,"y":0.33},"eye_left":{"x":0.42,"y":0.37},"eye_right":{"x":0.58,"y":0.37},"nose_tip":{"x":0.5,"y":0.46},"mouth_left":{"x":0.45,"y":0.54},"mouth_right":{"x":0.55,"y":0.54},"cheek_left":{"x":0.38,"y":0.47},"cheek_right":{"x":0.62,"y":0.47},"chin":{"x":0.5,"y":0.65}}},
+ "title": "Personalized Aesthetic Enhancement Plan",
+ "subtitle": "one line",
+ "tagline": "e.g. Same you. Just more refined.",
+ "summary": "2-3 sentences on the overall direction",
+ "overall_effect": "one sentence",
+ "labels": {"before":"Before","after":"After","what_changed":"What changed & why it works","key_changes":"Key changes","daily_tips":"Quick daily tips","products":"Product & style recommendations","palette":"Your palette"},
+ "features": [{"area":"hair|brows|eyes|skin|lips|facial_hair","label":"Hair","current":["2-3 observations"],"changes":["2-4 recommendations"],"why":"1-2 sentences","caption":"max 7 words","effort":"low|medium|high","how_to":["2-4 steps"],"products":[{"category":"generic type","why":"short"}]}],
+ "hair": {"style":"name","spec":"what to ask the stylist for, with lengths","color":"direction or keep natural","alternatives":[{"name":"","description":""}]},
+ "skin": {"type":"Likely combination","undertone":"warm|cool|neutral|olive","metrics":[{"name":"Hydration","score":64,"note":"short"}]},
+ "palette": [{"name":"Rosy nude","hex":"#c98a7d","use":"Lip tint"}],
+ "tips": [{"icon":"scissors|droplet|sun|brush|moon|water|sparkle|leaf","title":"short","detail":"short"}],
+ "routine": {"am":[{"step":"","detail":""}],"pm":[{"step":"","detail":""}],"weekly":[""]}
+}
+features: one per relevant area, most impactful first (omit facial_hair if not applicable). skin.metrics: 4-6. palette: 4-6 flattering tones. tips: 4.`;
+}
+
+function arr(v) { return Array.isArray(v) ? v : []; }
+function str(v, d = "") { return typeof v === "string" && v.trim() ? v : d; }
+function normalizePlan(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const L = r.labels || {};
+  return {
+    suitability: str(r.suitability, "ok"),
+    geometry: r.geometry || {},
+    title: str(r.title, "Personalized Aesthetic Enhancement Plan"),
+    subtitle: str(r.subtitle, "Subtle, high-impact changes that bring out your natural features."),
+    tagline: str(r.tagline, "Same you. Just more refined."),
+    summary: str(r.summary),
+    overall_effect: str(r.overall_effect),
+    labels: {
+      before: str(L.before, "Before"), after: str(L.after, "After"), what_changed: str(L.what_changed, "What changed & why it works"),
+      key_changes: str(L.key_changes, "Key changes"), daily_tips: str(L.daily_tips, "Quick daily tips"),
+      products: str(L.products, "Product & style recommendations"), palette: str(L.palette, "Your palette"),
+    },
+    features: arr(r.features).filter((f) => AREAS.includes(f?.area)).filter((f, i, a) => a.findIndex((g) => g.area === f.area) === i).slice(0, 6).map((f) => ({
+      area: f.area, label: str(f.label, AREA_LABEL[f.area]), current: arr(f.current).map(String), changes: arr(f.changes).map(String),
+      why: str(f.why), caption: str(f.caption, AREA_LABEL[f.area]), effort: ["low", "medium", "high"].includes(f.effort) ? f.effort : "low",
+      how_to: arr(f.how_to).map(String), products: arr(f.products).filter((p) => p && p.category).map((p) => ({ category: String(p.category), why: str(p.why) })),
+    })),
+    hair: { style: str(r.hair?.style, "—"), spec: str(r.hair?.spec), color: str(r.hair?.color, "Keep your natural color."), alternatives: arr(r.hair?.alternatives).filter((a) => a && a.name) },
+    skin: {
+      type: str(r.skin?.type, "—"), undertone: str(r.skin?.undertone, "—"),
+      metrics: arr(r.skin?.metrics).filter((m) => m && m.name).map((m) => ({ name: String(m.name), score: clamp(Math.round(+m.score || 0), 0, 100), note: str(m.note) })),
+    },
+    palette: arr(r.palette).filter((p) => p && /^#[0-9a-f]{6}$/i.test(p.hex)).slice(0, 6),
+    tips: arr(r.tips).filter((t) => t && t.title).slice(0, 4),
+    routine: { am: arr(r.routine?.am).filter((s) => s && s.step), pm: arr(r.routine?.pm).filter((s) => s && s.step), weekly: arr(r.routine?.weekly).map(String).filter(Boolean) },
+  };
+}
+
+const STAGES = [
+  ['"geometry"', "Locating your features"], ['"summary"', "Reading your look"], ['"area":"hair"', "Hair"], ['"area":"brows"', "Brows"],
+  ['"area":"eyes"', "Eyes"], ['"area":"skin"', "Skin"], ['"area":"lips"', "Lips"], ['"area":"facial_hair"', "Facial hair"],
+  ['"hair":{', "Choosing your cut"], ['"palette"', "Building your palette"], ['"routine"', "Writing your routine"],
+];
+
+const ERR = {
+  not_granted: "Glow needs your OK to ask Claude. Reload the page to be asked again.",
+  sampling_disabled: "Claude isn't available for this account here.",
+  images_unavailable: "This view can't send photos to Claude. Try opening the artifact in claude.ai.",
+  image_rejected: "Claude couldn't read that image. Try a different JPEG or PNG.",
+  rate_limited: "You've hit a usage limit for now. Try again in a little while.",
+  session_expired: "Your session expired. Sign in to claude.ai again, then retry.",
+  refused: "Claude couldn't create a plan for this photo. Try a different selfie.",
+  invalid_json: "The plan came back in an unexpected format. Try again.",
+  empty_completion: "The plan came back empty. Try again.",
+  upstream_error: "The connection to Claude dropped. Try again.",
+};
+
+async function createPlan() {
+  const ph = state.photo;
+  if (!ph || !state.sample) return;
+  state.view = "working"; state.stages = ["Sending your photo to Claude"]; state.error = null;
+  render();
+  const ctl = new AbortController(); state.ctl = ctl;
+  const seen = new Set();
+  try {
+    const raw = await state.sample.json(buildPrompt(state.prefs), {
+      images: ph.blob, modelTier: "complex", signal: ctl.signal,
+      onText: ({ text }) => {
+        const t = text.replace(/\s+/g, "");
+        let changed = false;
+        for (const [m, label] of STAGES) if (!seen.has(m) && t.includes(m)) { seen.add(m); state.stages.push(label); changed = true; }
+        if (changed) renderStages();
+      },
+    });
+    const plan = normalizePlan(raw);
+    const bad = { not_a_face: "We couldn't find a clear face in that photo. Try a front-facing selfie.", multiple_people: "There's more than one person in that photo. Try a solo selfie.", too_low_quality: "That photo is too dark, blurry or small. Try one in natural light." };
+    if (bad[plan.suitability]) { state.error = bad[plan.suitability]; state.view = "start"; render(); return; }
+    if (!plan.features.length) throw { code: "invalid_json" };
+    state.stages.push("Retouching on your device"); renderStages();
+    state.result = await buildResult(ph.url, ph.w, ph.h, plan, false);
+    state.view = "results"; state.tab = plan.suitability === "likely_minor" ? "Plan" : "Report";
+    render(); window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (e) {
+    state.view = "start";
+    if (e?.code !== "cancelled") state.error = ERR[e?.code] || (e?.message && !e.code ? e.message : ERR.upstream_error);
+    render();
+  }
+}
+
+async function buildResult(url, W, H, plan, isExample) {
+  let geo = toGeo(plan.geometry, W, H), src = url;
+  const rect = portraitRect(geo);
+  if (rect) { src = await cropUrl(url, rect); geo = shiftGeo(geo, rect); }
+  const areas = plan.features.map((f) => f.area);
+  const minor = plan.suitability === "likely_minor";
+  const after = minor ? src : await retouch(src, geo, areas, .7);
+  const res = { plan, before: src, after, geo, intensity: .7, tones: await tones(src, geo), details: {}, isExample, minor };
+  await refreshDetails(res);
+  return res;
+}
+async function refreshDetails(res) {
+  const rects = detailRects(res.geo);
+  const out = {};
+  await Promise.all(res.plan.features.map(async (f) => { out[f.area] = await cropUrl(res.after, rects[f.area], 480); }));
+  res.details = out;
+}
+
+/* ---------------- Report card (fixed 1600px, scaled to fit) ---------------- */
+const THEMES = {
+  editorial: { name: "Editorial", bg: "#f6f1ea", panel: "#fbf8f3", ink: "#221e1a", muted: "#6e6259", line: "#ddd3c6", band: "#efe7dc", bandInk: "#221e1a", badge: "#fbf8f3", badgeInk: "#221e1a", title: "var(--serif)", tcase: "none", tsize: 56, tw: 500, head: "var(--sans)", hcase: "uppercase", htrack: ".18em", hsize: 13 },
+  clinical: { name: "Clinical", bg: "#ffffff", panel: "#ffffff", ink: "#111111", muted: "#4b4b4b", line: "#1a1a1a", band: "#f3f3f3", bandInk: "#111111", badge: "#111111", badgeInk: "#ffffff", title: "'Oswald Glow', 'Arial Narrow', sans-serif", tcase: "uppercase", tsize: 46, tw: 600, head: "'Oswald Glow', 'Arial Narrow', sans-serif", hcase: "uppercase", htrack: ".03em", hsize: 19 },
+  noir: { name: "Noir", bg: "#151515", panel: "#1d1d1d", ink: "#f2f0ed", muted: "#b3aea8", line: "#3a3a3a", band: "#0d0d0d", bandInk: "#f2f0ed", badge: "#151515", badgeInk: "#f2f0ed", title: "var(--sans)", tcase: "uppercase", tsize: 32, tw: 400, head: "var(--sans)", hcase: "uppercase", htrack: ".24em", hsize: 12.5 },
+  sage: { name: "Sage", bg: "#f3f0e8", panel: "#faf8f3", ink: "#1f2a22", muted: "#5d6a60", line: "#d5d9cf", band: "#2f4a38", bandInk: "#f3f0e8", badge: "#2f4a38", badgeInk: "#f3f0e8", title: "var(--serif)", tcase: "uppercase", tsize: 46, tw: 500, head: "var(--serif)", hcase: "uppercase", htrack: ".12em", hsize: 14 },
+};
+
+function layoutBadges(ys, gap, top, bottom) {
+  const o = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y), pl = [];
+  o.forEach((e, k) => pl.push(k ? Math.max(Math.max(e.y, top), pl[k - 1] + gap) : Math.max(e.y, top)));
+  if (pl.length && pl[pl.length - 1] > bottom) for (let k = pl.length - 1; k >= 0; k--) pl[k] = Math.max(top, Math.min(pl[k], k === pl.length - 1 ? bottom : pl[k + 1] - gap));
+  const out = []; o.forEach((e, k) => (out[e.i] = pl[k])); return out;
+}
+
+function photoHTML(src, geo, feats, label, t, id) {
+  const W = geo.W, H = geo.H, r = W * .028, gx = W * .07, A = anchors(geo);
+  const pts = feats.map((f) => A[f.area]);
+  const ys = layoutBadges(pts.map((q) => q.y), r * 2.6, r * 1.6, H - r * 3.5);
+  const light = t.badge === "#fbf8f3" || t.badge === "#ffffff";
+  const serifLabel = t === THEMES.editorial || t === THEMES.sage;
+  const g = pts.map((q, i) => `<line x1="${gx + r}" y1="${ys[i]}" x2="${q.x}" y2="${q.y}" stroke="#fff" stroke-width="${W * .0025}" opacity=".9"/><circle cx="${q.x}" cy="${q.y}" r="${W * .006}" fill="#fff"/><circle cx="${gx}" cy="${ys[i]}" r="${r}" fill="${light ? "#fff" : t.badge}" stroke="${light ? "#111" : "#fff"}" stroke-width="${W * .003}"/><text x="${gx}" y="${ys[i]}" text-anchor="middle" dominant-baseline="central" font-size="${r * 1.1}" font-weight="700" fill="${light ? "#111" : t.badgeInk}" font-family="Inter Glow, sans-serif">${i + 1}</text>`).join("");
+  return `<div style="position:relative;overflow:hidden;background:#000"><img ${id ? `data-img="${id}"` : ""} src="${src}" alt="${esc(label)}" style="display:block;width:100%"><svg viewBox="0 0 ${W} ${H}" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">${g}</svg><span style="position:absolute;left:12px;bottom:12px;padding:4px 14px;font-weight:600;${serifLabel ? "background:rgba(246,241,234,.93);color:#221e1a;font-family:var(--serif);font-size:24px" : "background:rgba(10,10,10,.82);color:#fff;font-family:" + t.head + ";font-size:15px;letter-spacing:.14em;text-transform:uppercase"}">${esc(label)}</span></div>`;
+}
+
+function reportHTML(res, key) {
+  const t = THEMES[key] || THEMES.editorial, P = res.plan, feats = P.features;
+  const serif = t === THEMES.editorial || t === THEMES.sage;
+  const H = (s, extra = "") => `<h3 style="margin:0 0 12px;font-family:${t.head};text-transform:${t.hcase};letter-spacing:${t.htrack};font-size:${t.hsize}px;font-weight:600;${extra}">${esc(s)}</h3>`;
+  const badge = (n, s) => `<span style="width:${s}px;height:${s}px;border-radius:99px;display:inline-grid;place-items:center;background:${t.badge};color:${t.badgeInk};border:1.5px solid ${key === "clinical" ? t.badge : t.ink};font-size:${s * .52}px;font-weight:700;flex:none">${n}</span>`;
+  const dark = key === "noir" || key === "clinical";
+  const bar = `<div style="display:flex;align-items:center;gap:16px;font-family:${t.head};text-transform:uppercase;letter-spacing:${key === "clinical" ? ".04em" : ".26em"};font-size:${key === "clinical" ? 22 : 14}px;font-weight:600;${dark ? `background:${key === "noir" ? "#0c0c0c" : "#111"};color:#fff;padding:10px 16px;justify-content:center` : ""}">${dark ? "" : `<span style="flex:1;height:1px;background:${t.line}"></span>`}<span>${esc(P.labels.key_changes)}</span>${dark ? "" : `<span style="flex:1;height:1px;background:${t.line}"></span>`}</div>`;
+  const sw = [{ name: "Skin", hex: res.tones.skin, own: true }, { name: "Hair", hex: res.tones.hair, own: true }].concat(P.palette.slice(0, 5).map((p) => ({ name: p.use || p.name, hex: p.hex })));
+  return `<div style="width:1600px;background:${t.bg};color:${t.ink};font-family:var(--sans);padding:40px;line-height:1.45">
+  <header style="text-align:center;margin-bottom:28px">
+    <h1 style="font-family:${t.title};text-transform:${t.tcase};font-weight:${t.tw};font-size:${t.tsize}px;letter-spacing:${t.tcase === "uppercase" ? (key === "noir" ? ".28em" : ".02em") : "-.01em"};line-height:1.05;margin:0">${esc(P.title)}</h1>
+    <p style="margin:10px 0 0;font-size:19px;color:${t.muted};font-family:${serif ? "var(--serif)" : "var(--sans)"};font-style:${key === "editorial" ? "italic" : "normal"}">${esc(P.subtitle)}</p>
+  </header>
+  <section style="display:grid;grid-template-columns:520px 520px 1fr;gap:14px">
+    ${photoHTML(res.before, res.geo, feats, P.labels.before, t)}
+    ${photoHTML(res.after, res.geo, feats, P.labels.after, t, "after")}
+    <aside style="border:1px solid ${t.line};background:${t.panel};padding:20px 22px">
+      ${H(P.labels.what_changed, "margin-bottom:8px")}
+      ${feats.map((f, i) => `<div style="padding:12px 0;${i ? `border-top:1px solid ${t.line}` : ""}"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">${badge(i + 1, 26)}<strong style="font-family:${t.head};text-transform:uppercase;letter-spacing:${key === "clinical" ? ".02em" : ".12em"};font-size:${key === "clinical" ? 18 : 13}px">${esc(f.label)}</strong></div><ul style="margin:0;padding-left:36px;font-size:14.5px;color:${t.muted}">${f.changes.slice(0, 3).map((c) => `<li>${esc(c)}</li>`).join("")}</ul></div>`).join("")}
+    </aside>
+  </section>
+  <section style="margin-top:26px">${bar}
+    <div style="display:grid;grid-template-columns:repeat(${Math.max(1, feats.length)},1fr);gap:12px;margin-top:14px">
+      ${feats.map((f, i) => `<figure style="margin:0"><div style="position:relative;aspect-ratio:3/2;overflow:hidden;background:${t.line}"><img data-detail="${f.area}" src="${res.details[f.area] || ""}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><span style="position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px">${esc(f.label)}</span></div><figcaption style="margin-top:10px"><div style="font-family:${serif ? "var(--serif)" : "var(--sans)"};font-size:${serif ? 21 : 16}px;font-weight:600;line-height:1.2">${i + 1}. ${esc(f.caption)}</div><p style="margin:6px 0 0;font-size:13.5px;color:${t.muted}">${esc(f.why)}</p></figcaption></figure>`).join("")}
+    </div>
+  </section>
+  <section style="display:grid;grid-template-columns:1fr 1.1fr 1.2fr;gap:14px;margin-top:26px">
+    <div style="border:1px solid ${t.line};background:${t.panel};padding:16px 18px">${H(P.labels.palette)}
+      <div style="display:flex;gap:10px;flex-wrap:wrap">${sw.map((s) => `<div style="width:62px;text-align:center"><div style="width:46px;height:46px;border-radius:99px;margin:0 auto;background:${esc(s.hex)};border:1px solid ${t.line};${s.own ? `outline:2px dashed ${t.muted};outline-offset:2px` : ""}"></div><div style="margin-top:6px;font-size:10.5px;line-height:1.2;color:${t.muted}">${esc(s.name)}</div></div>`).join("")}</div>
+      <p style="margin:10px 0 0;font-size:11px;color:${t.muted}">Dashed = sampled from your photo</p></div>
+    <div style="border:1px solid ${t.line};background:${t.panel};padding:16px 18px">${H(P.labels.daily_tips)}
+      <div style="display:grid;grid-template-columns:repeat(${Math.max(1, Math.min(4, P.tips.length))},1fr);gap:10px">${P.tips.map((x) => `<div style="text-align:center"><div style="width:42px;height:42px;border-radius:99px;margin:0 auto 6px;display:grid;place-items:center;background:${t.badge};color:${t.badgeInk};border:1px solid ${t.line};font-size:18px">${TIP_ICON[x.icon] || "✦"}</div><div style="font-size:13px;font-weight:600">${esc(x.title)}</div><div style="font-size:12px;color:${t.muted};line-height:1.3">${esc(x.detail)}</div></div>`).join("")}</div></div>
+    <div style="border:1px solid ${t.line};background:${t.panel};padding:16px 18px">${H(P.labels.products)}
+      <ul style="margin:0;padding:0;list-style:none;font-size:13.5px;line-height:1.55">${feats.filter((f) => f.products.length).slice(0, 5).map((f) => `<li><strong>${esc(f.label)}:</strong> <span style="color:${t.muted}">${esc(f.products.map((p) => p.category).join(", "))}</span></li>`).join("")}<li style="margin-top:4px"><strong>✂</strong> <span style="color:${t.muted}">${esc(P.hair.style)}</span></li></ul></div>
+  </section>
+  <footer style="margin-top:26px;background:${t.band};color:${t.bandInk};padding:22px 30px;display:flex;align-items:center;justify-content:space-between;gap:24px">
+    <div style="font-family:${key === "clinical" ? t.head : "var(--serif)"};font-size:${key === "clinical" ? 24 : 30}px;letter-spacing:${key === "noir" ? ".2em" : ".06em"};text-transform:uppercase;font-weight:500">${esc(P.tagline)}</div>
+    <div style="max-width:620px;font-size:15px;opacity:.85;font-style:${key === "editorial" ? "italic" : "normal"}">${esc(P.overall_effect)}</div>
+  </footer>
+  <div style="margin-top:12px;text-align:center;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:${t.muted}">Made with Glow · AI styling visualization</div>
+</div>`;
+}
+
+/* ---------------- Views ---------------- */
+function render() {
+  const app = $("#app");
+  if (state.view === "working") app.innerHTML = workingHTML();
+  else if (state.view === "results" && state.result) app.innerHTML = resultsHTML(state.result, false);
+  else app.innerHTML = startHTML();
+  wire();
+  fitCards();
+}
+
+function chip(group, val, label, on) { return `<button class="chip" data-${group}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`; }
+
+function startHTML() {
+  const p = state.prefs, ph = state.photo;
+  const can = state.sample && state.imagesOK;
+  let gate = "";
+  if (state.sample === undefined) gate = `<div class="notice">Connecting to Claude…</div>`;
+  else if (!state.sample) gate = `<div class="notice">Open this artifact in claude.ai to create a plan for your own photo. The example below shows what you'll get.</div>`;
+  else if (!state.imagesOK) gate = `<div class="notice">This view can't send photos to Claude. Open the artifact in the claude.ai web or desktop app.</div>`;
+  return `
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Personal aesthetic plan</div>
+      <h1>Same you.<br><em>Just more refined.</em></h1>
+      <p class="lede">Upload a selfie. Claude studies your hair, brows, eyes, skin and lips and writes a personalized plan, with a realistic before and after and the reason each change works for your face.</p>
+      <ul class="ticks">
+        <li>Feature-by-feature analysis by Claude</li>
+        <li>Callouts pinned to your real features</li>
+        <li>Subtle retouch that never reshapes you</li>
+        <li>Report cards in 4 editorial styles</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="drop" id="drop">
+        ${ph ? `<div class="thumb"><img src="${ph.url}" alt="Your photo"><div><div class="serif" style="font-size:22px">Photo ready</div><div class="muted" style="font-size:13.5px">${ph.w} × ${ph.h}px · location data removed</div><button class="btn small" id="pick" style="margin-top:10px">Choose another</button></div></div>`
+        : `<div class="glyph">✦</div><h3>Drop a selfie here</h3><p class="muted" style="margin:4px 0 16px;font-size:13.5px">Front-facing, natural light, no filters. You can also paste an image.</p><button class="btn primary" id="pick">Choose photo</button>`}
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden>
+      </div>
+      <div class="prefs">
+        <div><div class="label" style="margin-bottom:8px">Vibe</div><div class="chips">${VIBES.map(([v, l]) => chip("vibe", v, l, p.vibe === v)).join("")}</div></div>
+        <div><div class="label" style="margin-bottom:8px">Makeup</div><div class="chips">${MAKEUP.map(([v, l]) => chip("makeup", v, l, p.makeup === v)).join("")}</div></div>
+        <div><div class="label" style="margin-bottom:8px">Focus on (optional)</div><div class="chips">${AREAS.map((a) => chip("focus", a, AREA_LABEL[a], p.focus.includes(a))).join("")}</div></div>
+        <div class="row2">
+          <label><span class="label" style="display:block;margin-bottom:8px">Language</span><select id="lang">${LANGS.map((l) => `<option${l === p.language ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+          <label><span class="label" style="display:block;margin-bottom:8px">Anything else?</span><input type="text" id="notes" maxlength="400" placeholder="e.g. keep my length, I wear glasses" value="${esc(p.notes)}"></label>
+        </div>
+        ${state.error ? `<div class="notice err" role="alert">${esc(state.error)}</div>` : ""}
+        ${gate}
+        <button class="btn primary" id="go" ${ph && can ? "" : "disabled"}>✦ Create my plan</button>
+      </div>
+      <p class="fine">Uses your Claude account; you'll be asked once to allow it. Photos aren't saved. For adults (18+).</p>
+    </div>
+  </section>
+  ${state.example ? `<div class="example-head"><div><div class="eyebrow">Example</div><h2 class="serif" style="font-weight:500;font-size:32px;margin-top:6px">What your report looks like</h2></div><span class="muted" style="font-size:13px">Illustrated sample · the numbered pins follow real features</span></div>${resultsHTML(state.example, true)}` : ""}`;
+}
+
+function workingHTML() {
+  return `<section class="working">
+    <div class="scan"><img src="${state.photo.url}" alt="Your photo"></div>
+    <div>
+      <h2 class="serif" style="font-weight:500;font-size:42px">Creating your plan…</h2>
+      <p class="muted">Claude is studying your features. This usually takes one to two minutes.</p>
+      <ol class="stages" id="stages" aria-live="polite">${stagesHTML()}</ol>
+      <button class="btn small" id="stop" style="margin-top:32px">Stop</button>
+    </div>
+  </section>`;
+}
+function stagesHTML() { return state.stages.map((s, i) => `<li class="${i === state.stages.length - 1 ? "now" : ""}"><b>${i === state.stages.length - 1 ? "" : "✓"}</b>${esc(s)}</li>`).join(""); }
+function renderStages() { const el = $("#stages"); if (el) el.innerHTML = stagesHTML(); }
+
+const TABS = ["Report", "Compare", "Plan", "Hair", "Skin", "Routine"];
+function resultsHTML(res, isExample) {
+  const P = res.plan;
+  const tabs = res.minor ? ["Plan", "Skin", "Routine"] : TABS;
+  const tabKey = isExample ? "exTab" : "tab";
+  const tab = tabs.includes(state[tabKey]) ? state[tabKey] : tabs[0];
+  const scope = isExample ? "ex" : "me";
+  return `<section data-scope="${scope}">
+    ${isExample ? "" : `<div class="res-head"><div><div class="eyebrow">Your plan</div><h2>${esc(P.tagline)}</h2></div><button class="btn small" id="again">↺ New photo</button></div>
+      ${res.minor ? `<div class="notice" style="margin-top:16px">Glow is designed for adults, so this plan sticks to gentle skincare, sun protection and hair care.</div>` : `<div class="notice" style="margin-top:16px">Your “after” is an on-device retouch: skin, under-eyes, brows and lips. Hair changes are described in the plan rather than drawn.</div>`}`}
+    <div class="tabs" role="tablist">${tabs.map((t) => `<button role="tab" data-tab="${t}" aria-selected="${t === tab}">${t}</button>`).join("")}</div>
+    <div class="tabpanel">${tabBody(res, tab, isExample)}</div>
+    ${isExample ? "" : `<p class="foot">AI suggestions for grooming and styling, not medical advice.</p>`}
+  </section>`;
+}
+
+function tabBody(res, tab, isExample) {
+  const P = res.plan;
+  if (tab === "Report") return `<div class="toolbar"><div class="chips" role="radiogroup" aria-label="Report style">${Object.entries(THEMES).map(([k, t]) => `<button class="chip" role="radio" data-theme-pick="${k}" aria-pressed="${state.template === k}" aria-checked="${state.template === k}"><span class="swatch-dot" style="background:${k === "sage" ? t.band : t.bg}"></span> ${t.name}</button>`).join("")}</div>${state.downloads ? `<button class="btn small primary" data-save>↓ Save PNG</button>` : ""}</div><div class="cardwrap" data-card><div>${reportHTML(res, state.template)}</div></div><p class="muted" data-save-msg style="font-size:13px;margin-top:10px"></p>`;
+  if (tab === "Compare") return `<div class="compare" data-compare><img src="${res.after}" alt="${esc(P.labels.after)}"><div class="before" style="clip-path:inset(0 50% 0 0)"><img src="${res.before}" alt="${esc(P.labels.before)}"></div><div class="bar" style="left:50%"><div class="knob">⇆</div></div><span class="tag" style="left:12px">${esc(P.labels.before)}</span><span class="tag" style="right:12px">${esc(P.labels.after)}</span><input type="range" min="0" max="100" value="50" aria-label="Reveal before and after" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"></div>
+    <label style="display:block;max-width:520px;margin:18px auto 0"><span style="display:flex;justify-content:space-between;font-size:14px"><span>Retouch strength</span><span class="muted" data-kval>${Math.round(res.intensity * 100)}%</span></span><input class="range" type="range" min="0" max="1" step="0.05" value="${res.intensity}" data-intensity></label>
+    <p class="serif muted" style="text-align:center;font-size:21px;font-style:italic;margin-top:16px">${esc(P.overall_effect)}</p>`;
+  if (tab === "Plan") return `${P.summary ? `<p class="muted" style="font-size:15.5px;max-width:70ch;margin:0 0 16px">${esc(P.summary)}</p>` : ""}${P.features.map((f, i) => `<div class="feat"><button aria-expanded="${i === 0}" data-feat>${res.details[f.area] ? `<img src="${res.details[f.area]}" alt="">` : ""}<span><span class="t" style="display:block">${esc(f.label)}</span><span class="cap">${esc(f.caption)}</span></span><span class="pill">${{ low: "Low effort", medium: "Some effort", high: "Higher effort" }[f.effort]}</span></button><div class="body" ${i === 0 ? "" : "hidden"}><div><div class="label">Now</div><ul>${f.current.map((c) => `<li>${esc(c)}</li>`).join("")}</ul><div class="label" style="margin-top:14px">Change</div><ul>${f.changes.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>${f.why ? `<div class="why"><strong>Why it works:</strong> ${esc(f.why)}</div>` : ""}</div><div><div class="label">How to</div><ol>${f.how_to.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>${f.products.length ? `<div class="label" style="margin-top:14px">Products</div>${f.products.map((p) => `<div class="prod"><strong>${esc(p.category)}</strong><div class="muted">${esc(p.why)}</div></div>`).join("")}` : ""}</div></div></div>`).join("")}`;
+  if (tab === "Hair") return `<div class="grid g2"><div class="box" style="grid-column:1/-1"><div class="label">Recommended</div><div class="big">${esc(P.hair.style)}</div><p style="margin:10px 0 14px">${esc(P.hair.spec)}</p><button class="btn small" data-copy="${esc(P.hair.style + ": " + P.hair.spec)}">Copy for your stylist</button></div><div class="box"><div class="label">Color</div><p style="margin:8px 0 0">${esc(P.hair.color)}</p></div><div class="box"><div class="label">Also suits you</div>${P.hair.alternatives.map((a) => `<div style="margin-top:10px"><strong>${esc(a.name)}</strong><div class="muted" style="font-size:14px">${esc(a.description)}</div></div>`).join("")}</div></div>`;
+  if (tab === "Skin") {
+    const C = 2 * Math.PI * 26;
+    return `<div class="grid g5"><div class="box"><div class="label">Type</div><div class="big" style="font-size:24px">${esc(P.skin.type)}</div></div><div class="box"><div class="label">Undertone</div><div class="big" style="font-size:24px">${esc(P.skin.undertone)}</div></div><div class="box" style="grid-column:span 2"><div class="label">Sampled from your photo</div><div class="chips" style="margin-top:10px">${Object.entries(res.tones).map(([k, h]) => `<div style="text-align:center;font-size:11.5px" class="muted"><div style="width:36px;height:36px;border-radius:99px;background:${h};border:1px solid var(--line)" title="${h}"></div>${AREA_LABEL[k] || k}</div>`).join("")}</div></div></div>
+    <div class="grid g5" style="margin-top:12px">${P.skin.metrics.map((m) => `<div class="box ring"><svg viewBox="0 0 64 64" role="img" aria-label="${esc(m.name)}: ${m.score} of 100"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${m.score / 100 * C} ${C}" transform="rotate(-90 32 32)"/><text x="32" y="32" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="var(--ink)">${m.score}</text></svg><div style="font-weight:500;margin-top:4px">${esc(m.name)}</div><div class="muted" style="font-size:12.5px">${esc(m.note)}</div></div>`).join("")}</div>
+    <p class="muted" style="font-size:12.5px;margin:12px 0 22px">Visual estimates from one photo, affected by lighting and camera. Not a medical or dermatological assessment.</p>
+    <div class="label" style="margin-bottom:10px">${esc(P.labels.palette)}</div><div class="grid g5">${P.palette.map((p) => `<div class="pal"><div class="c" style="background:${p.hex};color:${lum(p.hex) > .4 ? "#111" : "#fff"}">${p.hex}</div><div class="n"><strong style="font-weight:500">${esc(p.name)}</strong><div class="muted" style="font-size:12.5px">${esc(p.use)}</div></div></div>`).join("")}</div>`;
+  }
+  if (tab === "Routine") {
+    const today = new Date().toISOString().slice(0, 10), rs = store.get("routine", {}), done = !isExample && rs.date === today ? rs.done || {} : {};
+    const col = (title, steps, pre) => `<div class="box"><div class="serif" style="font-size:26px;margin-bottom:6px">${title}</div>${steps.map((s, i) => `<label class="check${done[pre + i] ? " done" : ""}"><input type="checkbox" data-step="${pre + i}" ${done[pre + i] ? "checked" : ""} ${isExample ? "disabled" : ""}><span><strong style="font-weight:500">${esc(s.step)}</strong><div class="muted" style="font-size:13.5px">${esc(s.detail)}</div></span></label>`).join("")}</div>`;
+    return `${isExample ? "" : `<div class="notice" style="justify-content:space-between;margin-bottom:12px"><span>Tick off today's steps. Progress stays in this browser.</span><strong>${rs.streak || 0}-day streak</strong></div>`}<div class="grid g2">${col("Morning", P.routine.am, "am")}${col("Evening", P.routine.pm, "pm")}</div>${P.routine.weekly.length ? `<div class="box" style="margin-top:12px"><div class="label">Weekly</div><ul style="margin:8px 0 0;padding-left:18px">${P.routine.weekly.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>` : ""}`;
+  }
+  return "";
+}
+function lum(hex) { const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
+
+/* ---------------- Wiring ---------------- */
+function wire() {
+  const file = $("#file"), drop = $("#drop");
+  $("#pick")?.addEventListener("click", () => file.click());
+  file?.addEventListener("change", () => { takeFile(file.files[0]); file.value = ""; });
+  if (drop) {
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); takeFile(e.dataTransfer.files[0]); });
+  }
+  document.querySelectorAll("[data-vibe]").forEach((b) => b.onclick = () => setPref("vibe", b.dataset.vibe));
+  document.querySelectorAll("[data-makeup]").forEach((b) => b.onclick = () => setPref("makeup", b.dataset.makeup));
+  document.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { const a = b.dataset.focus, f = state.prefs.focus; setPref("focus", f.includes(a) ? f.filter((x) => x !== a) : [...f, a]); });
+  $("#lang")?.addEventListener("change", (e) => setPref("language", e.target.value, true));
+  $("#notes")?.addEventListener("input", (e) => { state.prefs.notes = e.target.value; });
+  $("#go")?.addEventListener("click", createPlan);
+  $("#stop")?.addEventListener("click", () => state.ctl?.abort());
+  $("#again")?.addEventListener("click", reset);
+
+  document.querySelectorAll("[data-scope]").forEach((sec) => {
+    const isEx = sec.dataset.scope === "ex", res = isEx ? state.example : state.result;
+    sec.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { state[isEx ? "exTab" : "tab"] = b.dataset.tab; render(); });
+    sec.querySelectorAll("[data-theme-pick]").forEach((b) => b.onclick = () => { state.template = b.dataset.themePick; store.set("template", state.template); render(); });
+    sec.querySelectorAll("[data-feat]").forEach((b) => b.onclick = () => { const body = b.nextElementSibling, open = b.getAttribute("aria-expanded") === "true"; b.setAttribute("aria-expanded", String(!open)); body.hidden = open; });
+    sec.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied ✓"; } catch { b.textContent = "Select the text above to copy"; } });
+    sec.querySelectorAll("[data-step]").forEach((c) => c.onchange = () => toggleStep(res, c.dataset.step));
+    const save = sec.querySelector("[data-save]"); if (save) save.onclick = () => savePNG(sec, save);
+    const cmp = sec.querySelector("[data-compare]"); if (cmp) wireCompare(cmp);
+    const k = sec.querySelector("[data-intensity]"); if (k) wireIntensity(k, res, sec);
+  });
+}
+
+function setPref(k, v, silent) { state.prefs[k] = v; const { notes, ...rest } = state.prefs; store.set("prefs", rest); if (!silent) { const n = $("#notes")?.value; if (n != null) state.prefs.notes = n; render(); } }
+
+async function takeFile(f) {
+  if (!f) return;
+  state.error = null;
+  try { state.photo = await normalizePhoto(f); } catch (e) { state.error = e.message; }
+  render();
+}
+document.addEventListener("paste", (e) => {
+  if (state.view !== "start") return;
+  const it = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+  if (it) takeFile(it.getAsFile());
+});
+
+function reset() { state.ctl?.abort(); state.result = null; state.photo = null; state.error = null; state.view = "start"; render(); window.scrollTo({ top: 0 }); }
+$("#home").onclick = reset;
+
+function wireCompare(el) {
+  const before = el.querySelector(".before"), bar = el.querySelector(".bar"), input = el.querySelector("input");
+  const set = (pct) => { pct = clamp(pct, 0, 100); before.style.clipPath = `inset(0 ${100 - pct}% 0 0)`; bar.style.left = pct + "%"; input.value = pct; };
+  const move = (x) => { const r = el.getBoundingClientRect(); set((x - r.left) / r.width * 100); };
+  el.addEventListener("pointerdown", (e) => { el.setPointerCapture(e.pointerId); move(e.clientX); input.focus({ preventScroll: true }); });
+  el.addEventListener("pointermove", (e) => { if (e.buttons) move(e.clientX); });
+  input.addEventListener("input", () => set(+input.value));
+}
+
+let intensityTimer;
+function wireIntensity(input, res, sec) {
+  input.addEventListener("input", () => {
+    sec.querySelector("[data-kval]").textContent = Math.round(input.value * 100) + "%";
+    clearTimeout(intensityTimer);
+    intensityTimer = setTimeout(async () => {
+      res.intensity = +input.value;
+      res.after = await retouch(res.before, res.geo, res.plan.features.map((f) => f.area), res.intensity);
+      await refreshDetails(res);
+      const img = sec.querySelector("[data-compare] > img"); if (img) img.src = res.after;
+    }, 220);
+  });
+}
+
+function toggleStep(res, id) {
+  const today = new Date().toISOString().slice(0, 10), prev = store.get("routine", {});
+  const done = { ...(prev.date === today ? prev.done : {}), [id]: !(prev.date === today && prev.done?.[id]) };
+  const all = [...res.plan.routine.am.map((_, i) => "am" + i), ...res.plan.routine.pm.map((_, i) => "pm" + i)].every((k) => done[k]);
+  const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  let streak = prev.streak || 0;
+  if (all && prev.lastComplete !== today) streak = prev.lastComplete === yest ? streak + 1 : 1;
+  store.set("routine", { date: today, done, streak, lastComplete: all ? today : prev.lastComplete });
+  render();
+}
+
+async function savePNG(sec, btn) {
+  const node = sec.querySelector("[data-card] > div > div"), msg = sec.querySelector("[data-save-msg]");
+  btn.disabled = true; btn.textContent = "Rendering…";
+  try {
+    const blob = await window.htmlToImage.toBlob(node, { pixelRatio: 1.5, width: 1600, height: node.offsetHeight, style: { transform: "none" }, skipFonts: false });
+    await state.downloads.save({ filename: `glow-plan-${state.template}.png`, data: blob });
+    msg.textContent = "Saved.";
+  } catch (e) {
+    msg.textContent = e?.code === "declined" ? "" : e?.code === "unavailable" ? "Saving isn't available in this view." : "Couldn't render the image. Try again.";
+  } finally { btn.disabled = false; btn.textContent = "↓ Save PNG"; }
+}
+
+function fitCards() {
+  document.querySelectorAll("[data-card]").forEach((wrap) => {
+    const inner = wrap.firstElementChild, card = inner.firstElementChild;
+    const s = wrap.clientWidth / 1600;
+    inner.style.transform = `scale(${s})`;
+    wrap.style.height = card.offsetHeight * s + "px";
+  });
+}
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(fitCards, 80); });
+document.fonts?.ready.then(fitCards);
+
+/* ---------------- Illustrated example ----------------
+   A drawn portrait with known feature positions, so the first view shows
+   the whole experience without a real person's photo. */
+function exampleSVG() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdbfae"/><stop offset="1" stop-color="#a99884"/></linearGradient>
+  <radialGradient id="sk" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#e2b497"/><stop offset="1" stop-color="#c98f70"/></radialGradient>
+  <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 .22 0"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  <ellipse cx="400" cy="1090" rx="340" ry="270" fill="#3f4d5e"/>
+  <path d="M340 640 L460 640 L470 810 Q400 850 330 810 Z" fill="#c48b6c"/>
+  <ellipse cx="232" cy="485" rx="24" ry="44" fill="#cf9676"/><ellipse cx="568" cy="485" rx="24" ry="44" fill="#cf9676"/>
+  <ellipse cx="400" cy="475" rx="165" ry="210" fill="url(#sk)"/>
+  <ellipse cx="400" cy="475" rx="165" ry="210" fill="#000" filter="url(#n)"/>
+  <circle cx="392" cy="530" r="26" fill="#c9624f" opacity=".22"/><circle cx="300" cy="545" r="38" fill="#c9624f" opacity=".16"/><circle cx="502" cy="545" r="38" fill="#c9624f" opacity=".16"/>
+  <ellipse cx="335" cy="473" rx="34" ry="14" fill="#8a5a48" opacity=".28"/><ellipse cx="465" cy="473" rx="34" ry="14" fill="#8a5a48" opacity=".28"/>
+  <path d="M226 485 C212 250 330 150 420 158 C548 165 604 268 574 480 C566 392 528 334 474 318 C424 346 328 348 288 330 C254 366 238 420 226 485 Z" fill="#35271f"/>
+  <path d="M300 410 Q335 392 372 404" stroke="#3a2a22" stroke-width="11" fill="none" stroke-linecap="round" opacity=".85"/>
+  <path d="M428 404 Q465 392 500 410" stroke="#3a2a22" stroke-width="11" fill="none" stroke-linecap="round" opacity=".85"/>
+  <ellipse cx="335" cy="447" rx="31" ry="14" fill="#f4ede6"/><circle cx="336" cy="447" r="12" fill="#4a3528"/><circle cx="336" cy="447" r="5" fill="#140d09"/>
+  <ellipse cx="465" cy="447" rx="31" ry="14" fill="#f4ede6"/><circle cx="464" cy="447" r="12" fill="#4a3528"/><circle cx="464" cy="447" r="5" fill="#140d09"/>
+  <path d="M398 452 C394 505 382 532 398 543 C410 548 420 542 422 536" stroke="#a9725a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M352 600 Q376 586 400 592 Q424 586 448 600 Q424 622 400 622 Q376 622 352 600 Z" fill="#b87a6d"/>
+  <path d="M354 600 Q400 606 446 600" stroke="#8c4f47" stroke-width="3" fill="none"/>
+  <path d="M330 810 Q400 850 470 810 L520 1000 L280 1000 Z" fill="#3f4d5e"/>
+</svg>`;
+}
+const EXAMPLE_GEOMETRY = {
+  face_box: { x: .294, y: .3, w: .4125, h: .38 },
+  points: {
+    hair: { x: .5, y: .2 }, brow_left: { x: .42, y: .402 }, brow_right: { x: .58, y: .402 }, eye_left: { x: .419, y: .447 }, eye_right: { x: .581, y: .447 },
+    nose_tip: { x: .5, y: .54 }, mouth_left: { x: .44, y: .6 }, mouth_right: { x: .56, y: .6 }, cheek_left: { x: .375, y: .545 }, cheek_right: { x: .625, y: .545 }, chin: { x: .5, y: .68 },
+  },
+};
+async function buildExample() {
+  const svg = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(exampleSVG());
+  const img = await loadImg(svg);
+  const c = canvasOf(800, 1000); c.getContext("2d").drawImage(img, 0, 0);
+  const plan = normalizePlan({ ...DEMO_PLAN, geometry: EXAMPLE_GEOMETRY, summary: "An example plan for an illustrated portrait. Upload your own photo for a plan written for you." });
+  state.example = await buildResult(c.toDataURL("image/jpeg", .92), 800, 1000, plan, true);
+  state.exTab = "Report";
+  if (state.view === "start") render();
+}
+
+render();
+buildExample().catch((e) => console.error("example failed", e));
+</script>
