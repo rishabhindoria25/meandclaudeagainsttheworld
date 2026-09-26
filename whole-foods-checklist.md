@@ -5,3 +5,5 @@
 - [ ] Cooking oil
 - [ ] Lemongrass
 - [ ] Tea leaves
+- [ ] Dhaniya (cilantro/coriander)
+- [ ] Tomato
