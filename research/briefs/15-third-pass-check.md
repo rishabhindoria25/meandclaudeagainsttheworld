@@ -66,7 +66,7 @@ Everything else checked in §1, §3, §4 and §7 matched its primary source. Exa
 | Config | Result before | Fix applied in the report |
 |---|---|---|
 | A.2 and A.3 JSON | Both valid against the schemastore schema. The schema is stale in three places: no `Concise` in the outputStyle description, no `mask` credential mode, and 31 hook events against 33 in the docs. | None needed |
-| A.3 `require-green.sh` (Stop gate) | `git diff --quiet HEAD` exits 0 when the only changes are untracked files, so a turn that only adds files skips typecheck and tests. Reproduced in a scratch repository. | Check `git status --porcelain` instead |
+| A.3 `require-green.sh` (Stop gate) | `git diff --quiet HEAD` exits 0 when the only changes are untracked files, so a turn that only adds files skips typecheck and tests. Reproduced in a scratch repository. | Check `git status --porcelain` instead. Retested in a scratch repository on six cases: clean tree, failing checks, the five-retry cap, a fix clearing the counter, new files only, and staged files. The old gate let the new-files-only case stop; the fixed one passes all six. |
 | A.3 PostToolUse formatter | `xargs` splits a path with spaces into two arguments, so the formatter fails on, for example, iCloud Drive paths. | `xargs -I{}` |
 | A.3 `guard-bash.sh` | Missed `rm -fr`, `rm -Rf`, split flags and `wget \| sh`. | One regex covers every recursive-`rm` form and `wget`. Retested on 24 commands. |
 | A.16 personal guard | Missed split flags, and a bare `git push` while `main` is checked out. | Reads `cwd` from the hook input and checks the current branch. Retested. |
