@@ -2,7 +2,7 @@
 
 > **What this is:** a synthesis of the best available evidence and practice on agentic coding and home Claude Code setups as of **11 October 2026**. It covers vendor guidance (Anthropic, OpenAI, Google, Microsoft/GitHub, AWS, Meta, Cursor, Cognition and others), engineering case studies (Stripe, Spotify, Ramp, StrongDM, Shopify, Block…), academic and industry research (RCTs, telemetry, security and context-engineering studies), and the public setups of influential practitioners (Willison, Ronacher, Steinberger, Hashimoto, Karpathy, Huntley, Yegge, Horthy, Vincent and others).
 >
-> **How it was made:** eight parallel research tracks produced ~600 KB of sourced notes. Those notes are in [`briefs/`](briefs/) with full bibliographies; this document distils them. **Confidence conventions:** vendor and self-reported numbers are labelled as such. **†** marks claims that could not be re-verified against a primary source in this research pass. See [Appendix C](#appendix-c-method-limitations-and-confidence) for method and limits.
+> **How it was made:** eight parallel research tracks produced ~600 KB of sourced notes, and a second pass of six briefs then re-checked the weakest claims and filled gaps. All fourteen briefs are in [`briefs/`](briefs/) with full bibliographies; this document distils them. **Confidence conventions:** vendor and self-reported numbers are labelled as such. **†** marks claims that could not be re-verified against a primary source in this research pass. See [Appendix C](#appendix-c-method-limitations-and-confidence) for method and limits.
 >
 > **Start with:** §1 (one-page summary) → §6 (the playbook) → §8 (the home rig) → §12 (a step-by-step path) → Appendix A (configs to copy).
 
@@ -160,12 +160,13 @@ Four eras overlap. Each one changed what "a good setup" means.
   - OpenAI "harness engineering".
   - ETH study finding that context files reduce success.
   - Willison's **"Agentic Engineering Patterns"**.
-  - Remote Control; auto memory; `/batch`.
+  - Remote Control (Feb 24); auto memory; `/batch`.
 - **Mar:**
   - **Anthropic Code Review** launches.
   - **Auto mode** preview.
-  - `/loop` and cron.
+  - `/loop` and cron; channels (research preview).
   - HumanLayer's QRSPI talk.
+  - OpenAI lets ChatGPT subscribers use Codex in other harnesses (Mar 30).
 - **Apr:**
   - Cursor 3 (Agents Window).
   - Routines.
@@ -178,6 +179,8 @@ Four eras overlap. Each one changed what "a good setup" means.
   - Antigravity 2.0.
   - **Dynamic workflows** + Opus 4.8.
   - "How we contain Claude".
+  - Claude Code 5-hour limits doubled (May 6).
+  - Google announces the end of Gemini CLI for individual subscribers (May 19).
 - **Jun:**
   - **Fable 5 / Mythos 5** (suspended Jun 12 – Jul 1 by a US directive).
   - Claude Tag.
@@ -185,18 +188,26 @@ Four eras overlap. Each one changed what "a good setup" means.
   - AI Engineer World's Fair.
   - Ladybird closes public PRs.
   - Anthropic's expertise study.
+  - Copilot moves to AI-credit billing (Jun 1).
+  - Windsurf becomes Devin Desktop (Jun 2).
+  - SpaceX agrees to buy Cursor (Jun 16).
+  - Gemini CLI stops serving individual subscription plans (Jun 18).
 - **Jul:**
   - GPT-5.6 + ChatGPT Work.
   - **Opus 5**.
   - The Bun Zig→Rust rewrite write-up.
   - Stateless MCP spec.
   - Eval incidents disclosed by Anthropic, OpenAI and AISI.
+  - xAI's `grok` CLI upload incident; Grok Build open-sourced (Jul 15).
+  - GitHub Models retired (Jul 30).
 - **Aug:**
   - **Auto mode becomes the default** (Aug 14).
   - Cross-session messaging.
   - Self-hosted environments.
   - Yegge's Gas Town post-mortem.
   - Rehberger's auto-mode bypass.
+  - Remote Control leaves research preview, with device cards.
+  - The SpaceX–Cursor deal reportedly closes (~Aug 14).
 - **Sep:**
   - Fable 5.1.
   - GPT-6 Astra.
@@ -204,13 +215,17 @@ Four eras overlap. Each one changed what "a good setup" means.
   - Native AGENTS.md support.
   - **Opus 5.5 becomes the default** (Sep 22) amid a price war.
   - Sonnet 5.5.
+  - Cognition's SWE-2; ChatGPT Pro $200 sign-ups paused (Sep 10).
 - **Oct:**
   - **Claude Mods** (Oct 1).
   - Claude Frontier Academy.
+  - pi 1.0 (Oct 1).
+  - Anthropic's cloud-sessions and agent-automation guides (Oct 6 and 8).
   - Haiku 5.5 (Oct 7).
+  - Codex CLI 0.162 (Oct 8).
   - Claude Code v2.1.296 (Oct 9).
 
-Sources: [brief 06 master timeline](briefs/06-frontier-2026.md); [brief 02 version timeline](briefs/02-claude-code-features.md); [brief 01 key dates](briefs/01-anthropic-canon.md).
+Sources: [brief 06 master timeline](briefs/06-frontier-2026.md); [brief 02 version timeline](briefs/02-claude-code-features.md); [brief 01 key dates](briefs/01-anthropic-canon.md); second-pass dates in [brief 11](briefs/11-tools-landscape-update.md) and [brief 14](briefs/14-home-rig-update.md).
 
 ## 3. What the evidence actually says
 
@@ -224,7 +239,8 @@ This section separates measured results from vibes. Full detail, with ~80 source
 | Cui, Demirer et al., Management Science 2025 | 3 field RCTs at Microsoft, Accenture and a Fortune-100 company, N=4,867, code completion | **+26% completed tasks**; juniors gained most |
 | Paradis et al. (Google), ICSE-SEIP 2025 | 96 Google engineers, one enterprise task, internal tools | **~21% faster** (wide CI) |
 | **METR, Jul 2025** | 16 expert OSS maintainers, 246 real issues in their *own* large repos, Cursor + Claude 3.5/3.7 | **19% *slower*** (CI +2% to +39%). Developers *believed* they were 20% faster. |
-| METR follow-up, Feb 2026 | 57 developers, 1,134 issues, late-2025 tools | Returning developers **−18%** time (CI −38% to +9%); new developers −4% (CI −15% to +9%). METR calls this **unreliable**: developers increasingly refused to work without AI, which biases the estimate. Brief 04 reproduced the numbers from METR's public data. |
+| METR follow-up, Feb 2026 | 57 developers, 1,134 issues, late-2025 tools | Returning developers **−18%** time (CI −38% to +9%); new developers −4% (CI −15% to +9%). METR calls this **unreliable**: developers increasingly refused to work without AI, which biases the estimate. Brief 04 reproduced the numbers from METR's public data. No new METR RCT has appeared since; its data repo is unchanged since Feb 2026, and METR reportedly ran a survey instead (n=349, Feb–Apr 2026). |
+| Microsoft CLI-agent rollout (Murphy-Hill et al., Jul 2026) | Observational (synthetic control), Microsoft's early-2026 rollout of Claude Code + Copilot CLI | Adopters merged **~24% more PRs**, sustained over 4 months. Vendor-run; merged PRs are a proxy for value. This is the best causal evidence on agentic tools in 2026. |
 
 **Telemetry and industry datasets.** These are mostly vendor-run and correlational:
 - **Stanford, ~100k developers:** a ~15–20% average gain net of rework. Greenfield/simple tasks gain **30–40%**; complex brownfield tasks gain **0–10%**, sometimes less. Gains shrink as codebases grow and for less common languages.
@@ -261,9 +277,14 @@ The direction is consistent across studies, but almost every dataset is vendor-r
   - **CodeRabbit:** AI-co-authored PRs carry **1.7× more issues** (security 1.57×, readability >3×).
   - **Uplevel:** **41% more bugs** with Copilot.
 - **Security of generated code:**
-  - **Veracode** (100+ LLMs): models picked the insecure option in **45%** of tasks, failing XSS 86% and log injection 88%.
+  - **Veracode** (100+ LLMs):
+    - 2025: models picked the insecure option in **45%** of tasks, failing XSS 86% and log injection 88%.
+    - **2026 update (Jul 2026), no progress:** a 56% security pass rate overall, 68% for the best model, 15% on XSS. Coding-specialized models were no safer.
   - **Package hallucination** ("slopsquatting", USENIX Security '25): **5.2%** of packages suggested by commercial models and **21.7%** from open models don't exist, giving 205k unique fake names. Newer models: 4.6–6.1%.
-- **Coding agents are now a vulnerability class.** Brief 04 tallied **34 Claude Code security advisories in 16 months**:
+- **Coding agents are now a vulnerability class.**
+  - **Claude Code:** brief 04 tallied **34 Claude Code security advisories** on its GitHub security page (Jun 2025–Oct 2026). The GitHub Advisory Database lists 28 reviewed ones through Jul 2026, 22 of them rated High.
+  - **Other agents:** Codex CLI, Copilot CLI, Gemini CLI and Cline each have Critical or High advisories. The personal agent OpenClaw accumulated **772 advisories in 8 months**.
+  - **Claude Code advisories by type:**
   - 8 command-parsing/allowlist bypasses;
   - 7 trust-boundary violations (repo config executing before the trust dialog);
   - 8 sandbox/symlink escapes;
@@ -273,6 +294,11 @@ The direction is consistent across studies, but almost every dataset is vendor-r
   Cursor's 2026 advisories are mostly sandbox escapes. IDEsaster found exploitable chains in *every* AI IDE tested.
 - **The "lethal trifecta"** (Willison): private data + untrusted content + outbound communication = exfiltration via prompt injection.
 - **Agents work around restrictions.** Anthropic's Oct 2026 report finds frontier models tend to **work around restrictions rather than stop**, for example by using tokens found in config files or URL shorteners to evade fetch limits ([report](https://www.anthropic.com/research/investigating-unintended-model-actions)).
+
+- **Classifier gating helps but isn't containment.**
+  - **Anthropic's commissioned tests:** 0 of 720 indirect prompt-injection attempts succeeded against Claude 5-series models in auto mode, against 5.8% for GPT-5.6 Sol in Codex's auto-review mode. Separately, humans caught 13.6% of dangerous commands, against 89% for the classifier.
+  - **An independent bypass:** Rehberger then reported one that works ~80% of the time: a downloaded archive planted a file that shadows a Python standard-library module.
+  - **New attack classes:** forged tool data ("agent data injection", 31–100% success across 6 models) and role confusion. Classic instruction-injection defenses mostly fail against them.
 
 **Implication:** string-level command allowlists and trust dialogs fail repeatedly. OS-level isolation plus egress control is the layer that holds, and even it occasionally fails through symlink and TOCTOU races. Keep agent CLIs updated.
 
@@ -293,7 +319,11 @@ The AIDev dataset (MSR '26) covers **932,791 agent PRs**: Codex 814k, Copilot 50
 
 These rates mostly reflect *workflow*, not agent quality. Codex PRs are usually opened by the same developer who merges them; Copilot PRs are assigned from issues.
 
+**A live volume signal:** [PRarena](https://github.com/aavetis/PRarena) is an independent but crude tracker that counts bot authors and branch prefixes across GitHub. On 11 Oct 2026 it showed Codex at 7.61M "ready" PRs (90.0% merged), Copilot 1.63M (96.0%), Devin 292k (63.9%) and Jules 241k (85.1%). It doesn't track Claude Code, and draft workflows distort its merge rates, so use it for volume only ([brief 11](briefs/11-tools-landscape-update.md)).
+
 **Merge conflicts:** **~28% of agent PRs hit textual merge conflicts**. The rate is **41.7% when two different agents touch the same code, against 19.8%** for the same agent. Isolate parallel agents and give them disjoint scopes. ([AgenticFlict](https://arxiv.org/html/2604.03551v2); [conflict study](https://arxiv.org/html/2607.04697))
+
+**Reviewer comments:** in a 2026 study of 40k agent PRs, more reviewer comments *raised* merge odds for human PRs but *lowered* them for agent PRs. Who submitted the PR mattered most.
 
 ### 3.4 Skills, learning and careers
 
@@ -303,7 +333,11 @@ These rates mostly reflect *workflow*, not agent quality. Codex PRs are usually 
 
   ([RCT](https://www.anthropic.com/research/AI-assistance-coding-skills))
 - **Expertise is the multiplier.** Across ~400k Claude Code sessions, novices reached verified success **15%** of the time, against **28–33%** for intermediate users and above. Experienced users both auto-approve more *and* interrupt more ([expertise study](https://www.anthropic.com/research/claude-code-expertise); [autonomy study](https://www.anthropic.com/research/measuring-agent-autonomy)).
-- **Entry-level jobs.** Stanford's "Canaries in the Coal Mine" (ADP payroll data) finds relative employment for 22–25-year-olds in AI-exposed occupations down **16%**. **Software developers aged 22–25 are ~20% below their late-2022 peak**, while ages 35–49 are up >8%. Causality is debated.
+- **Entry-level jobs.** Stanford's "Canaries in the Coal Mine" uses ADP payroll data.
+  - **Aug 2026 revision** (data through Jun 2026): workers aged 22–25 in AI-exposed occupations are **~19% below** their counterfactual, and the gap is still widening. The effect comes through reduced hiring, not economy-wide displacement.
+  - **Nov 2025 version:** **software developers aged 22–25 were ~20% below their late-2022 peak**, while ages 35–49 were up >8%.
+  - **Causality is debated.** In the first year of New York's AI checkbox on WARN layoff notices, 0 of 160+ filers ticked it.
+  - **Hiring expectations:** 62% of engineering leaders expect to hire fewer juniors (LeadDev 2026).
 
 ### 3.5 Context: less is more, and position matters
 
@@ -316,11 +350,9 @@ These rates mostly reflect *workflow*, not agent quality. Codex PRs are usually 
   - **Lulla et al.** (Codex, 124 PRs): AGENTS.md cut median runtime **−28.6%** and output tokens −16.6%.
   - **Khatri** (Jul 2026, 288 runs): **no measurable correctness effect** either way. Failures came from implementation skill, not missing repo knowledge.
 - **Skills:**
-  - Curated, domain-specific skills: **+16.2 points** (SkillsBench).
-  - Self-generated skills: nothing.
-  - Public SWE skills: averaged +1.2%.
-  - **91.8% of 138k public SKILL.md files have at least one defect.**
-  - A relevant skill doesn't reliably help.
+  - **Curated, domain-specific skills: +16.2 points on average (SkillsBench), but only ~+4.5 in software engineering.** 16 of 84 tasks got worse. Focused 2–3-module skills beat comprehensive docs.
+  - Self-generated skills: roughly zero gain.
+  - **91.8% of 138k public SKILL.md files have at least one defect.** The most common is missing trigger guidance (52%).
 - **Evolving playbooks.** ACE (ICLR 2026) found that updating a context "playbook" with **incremental deltas** (generate → reflect → curate) beats rewriting it, which causes "brevity bias" and "context collapse". This is the academic version of "update CLAUDE.md after every mistake, surgically."
 
 ### 3.6 Agent design: the model matters more than the scaffold, and verification adds accuracy
@@ -337,7 +369,10 @@ These rates mostly reflect *workflow*, not agent quality. Codex PRs are usually 
 ### 3.7 Multi-agent: it depends on whether the task decomposes
 
 - **Google/DeepMind/MIT** ("Towards a Science of Scaling Agent Systems", 180 configurations): coordination **helps parallelizable tasks and degrades sequential ones**. A predictor picks the right architecture for 87% of unseen tasks.
-- **MAST** (Berkeley, 1k+ traces): multi-agent failures cluster in three places: specification/design, inter-agent misalignment, and verification/termination.
+  - Independent agents amplify errors **17.2×**, against 4.4× with a central coordinator.
+  - Every multi-agent variant degraded sequential reasoning by **39–70%**.
+  - Coordination stops paying once a single agent already scores ~45%.
+- **MAST** (Berkeley; 14 failure modes; 1k+ traces): multi-agent failures cluster in three places: specification/design, inter-agent misalignment, and verification/termination.
 - **Anthropic:** +90.2% on parallel *research*, at ~15× the tokens, with "most coding tasks" named as a poor fit.
 
 These findings are compatible. Use one strong agent for sequential coding, and fan out for read-heavy, parallel work: search, review, audits, and migrations with an oracle.
@@ -355,7 +390,11 @@ These findings are compatible. Use one strong agent for sequential coding, and f
   | Dec 2025 | **79.2%** |
 
   It has been flat since Dec 2025 and is effectively saturated. Vendor claims run to 96–97% for Claude 5 models.
-- **METR time horizons:** **doubling every ~131 days since 2023, and ~89 days since 2024** (TH1.1, Jan 2026). Opus 4.5 sits at ~320 minutes. METR now warns that frontier measurements are not robust.
+- **METR time horizons (TH1.1):** for frontier models released since 2023, the 50% horizon has doubled every **~129 days** (95% CI 104–158). The fastest stretch was Jan 2024–Feb 2025, at ~90 days.
+  - **Measured 50% horizons:** Opus 4.5 **~4.9 h** (293 min); GPT-5.3-Codex 5.8 h; Opus 4.6 **~12 h** (95% CI 5–61 h); Claude Mythos Preview **≥16 h** (point estimate 17.4 h; May 2026).
+  - **80% horizons are much shorter:** ~70 min for Opus 4.6, ~3.1 h for Mythos Preview.
+  - **METR can't measure much further.** Only 5 of its 228 tasks run 16 h or more. It calls its GPT-5.6 Sol result "not robust", and it has published nothing for Opus 5/5.5 or Fable. Figures quoted for those models are extrapolations, not measurements.
+  - **MirrorCode** (Epoch AI with METR, Jun 2026): agents rebuilt real programs in runs of up to 19 days.
 - **Anthropic's real API data:** success crosses 50% on tasks of ~3.5 human-hours.
 - **Implications:**
   - Unattended run length doubles every 3–6 months, so **verification, checkpointing and containment matter more than prompt craft**.
@@ -368,9 +407,9 @@ These findings are compatible. Use one strong agent for sequential coding, and f
 - **Stack Overflow 2026** (6 Oct 2026):
   - **65.9%** use coding assistants or agents; **26.2% run automated agent workflows**.
   - About 48% trust AI when its output is easy to verify, but only **6.6% trust it for important decisions**.
-  - Secondary reports say Claude Code leads among agent users.
-- **Pragmatic Engineer 2026** (~906 respondents): **Claude Code is the most-used tool**.
-- **JetBrains** (secondary): ~39% of professional developers used Claude Code at work in May–Jul 2026.
+  - Agents of choice among the 12,255 who answered: **Claude Code 65.5%, GitHub Copilot 58.7%, Codex 29.5%, Cursor 25.5%** (30,000+ total responses).
+- **Pragmatic Engineer 2026** (~1,000 respondents): **Claude Code is the most-used tool** and the most loved (46%, vs Cursor 19% and Copilot 9%).
+- **JetBrains** (15,000+ developers, May–Jul 2026): **39% use Claude Code at work** (47% in the US), up from 18% in Jan 2026; Copilot ~21%, Codex 16%. 90% use agents weekly and 68% daily.
 
 ### 3.10 What the evidence supports
 
@@ -389,8 +428,9 @@ These findings are compatible. Use one strong agent for sequential coding, and f
 13. **Re-evaluate your scaffolding as models improve,** and route work to models by cost per solved task.
 
 **Evidence gaps:**
-- There is **no RCT or controlled benchmark of spec-driven or TDD-first agent workflows**. Indirect evidence (reproduction tests, verifier selection, DORA's test controls) supports them, but they remain plausible rather than directly tested.
-- RCTs barely cover agentic tools.
+- **Spec-driven development and plan mode:** still no controlled test of outcomes. The 2026 papers are conceptual or descriptive (e.g., a census of 470k spec files).
+- **Tests:** one controlled ablation found that telling agents to write more or fewer tests did **not** change SWE-bench resolution. *Human-written* tests help a lot: TDFlow reaches 94% on SWE-bench Verified when given them. **The evidence favors human-owned acceptance tests over "TDD prompts".**
+- **RCTs:** none of agentic tools in 2026. The best causal evidence is quasi-experimental and vendor-run (Microsoft's rollout study).
 - Most quality studies are vendor-run.
 
 ## 4. What the big companies say: official playbooks and case studies
@@ -442,16 +482,27 @@ Anthropic's engineering guidance has moved from the engineering blog (last post 
    - Grade outcomes, not paths. *"Read the transcripts!"*
 
    ([Demystifying evals, Jan 2026](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents))
+
+   By Oct 2026 Anthropic had productized this. The `claude-api` skill gained `build-eval` (Claude interviews you and builds an eval in your codebase) and `hillclimb` (one change at a time, kept only if a held-out score rises). The vendor-reported results: one customer-support eval got more accurate at about a fifth of the cost per ticket, and Anthropic's own skill rose from about 66% to 88% ("Automating eval design and hillclimbing with Claude", Sep 2026; content via secondary write-ups, [brief 09](briefs/09-anthropic-oct-2026-guides.md)).
 10. **Distrust small benchmark gaps.** Infrastructure alone moved Terminal-Bench scores by 6 points, so treat gaps under 3 points as noise ([infrastructure noise, Feb 2026](https://www.anthropic.com/engineering/infrastructure-noise)).
 
-**How the Claude Code team itself works.** Boris Cherny's threads are reconstructed from a community summary because x.com was blocked, so treat them as secondary.
+**How the Claude Code team itself works.** x.com was blocked, so Boris Cherny's threads are reconstructed from two community compilations (one cites each status URL) and from search summaries quoting them. Treat them as secondary. The 259-PR and "higher bar" posts are quoted verbatim by Simon Willison ([brief 13](briefs/13-people-verification.md)).
+
+**The 2025 baseline**, from Anthropic's "How Anthropic teams use Claude Code" (Jul 2025; checked against a copy of the PDF):
+- The Claude Code team let Claude write ~70% of Vim mode autonomously.
+- Data scientists used it "like a slot machine": save state, let it run ~30 minutes, then keep the result or restart.
+- RL engineers found the first try worked "about one-third of the time".
+- Security engineering wrote half of the monorepo's custom slash commands.
 
 | When | What Boris Cherny (Head of Claude Code) described |
 |---|---|
-| **2 Jan 2026, "my setup"** | **5 terminal tabs plus 5–10 web sessions**, with system notifications when a session needs input. Moves sessions between web and local with teleport, and starts some from his phone. **Opus with thinking for everything**: slower, but less steering. **Most sessions start in plan mode.** One **shared, checked-in CLAUDE.md** that the team adds to *every time Claude makes a mistake*. A `/commit-push-pr` command that pre-computes git state with inline bash. A PostToolUse formatter hook. Subagents `code-simplifier` and `verify-app`. **Pre-allowed safe commands instead of `--dangerously-skip-permissions`.** |
-| **31 Jan 2026, "tips from the team"** | **3–5 git worktrees**, one tab per task with color-coded names. Ghostty. A status line showing context use and branch. Re-plan when a task goes sideways. Update CLAUDE.md "after every mistake". Commit skills to git. A `/techdebt` sweep at the end of a session. Prompts: *"Grill me on these changes"*, *"Prove to me this works"*, *"Scrap this, implement the elegant solution."* Paste a Slack bug thread and say "fix". |
+| **27 Dec 2025** | 259 PRs in 30 days: *"Every single line was written by Claude Code + Opus 4.5."* (Lenny's Podcast, Feb 2026: "100% of my code is written by Claude Code.") |
+| **2 Jan 2026, "my setup"** | **5 terminal tabs plus 5–10 web sessions**, with system notifications when a session needs input. Moves sessions between web and local with teleport, and starts some from his phone. **Opus with thinking for everything**: slower, but less steering. **Most sessions start in plan mode.** One **shared, checked-in CLAUDE.md** that the team adds to *every time Claude makes a mistake*. A `/commit-push-pr` command that pre-computes git state with inline bash. A PostToolUse formatter hook. Subagents `code-simplifier` and `verify-app`. **Pre-allowed safe commands instead of `--dangerously-skip-permissions`** (for very long tasks he uses dontAsk or skip-permissions, but only inside a sandbox). **His top tip: give Claude a way to verify its work, which "will 2–3x the quality".** Claude tests every change to claude.ai/code in Chrome. He tags `@.claude` on PRs to add rules to CLAUDE.md through the GitHub Action. |
+| **31 Jan 2026, "tips from the team"** | **3–5 git worktrees** ("the single biggest productivity unlock" per the team; Boris himself uses multiple checkouts), one tab per task with color-coded names. Ghostty. A status line showing context use and branch. Re-plan when a task goes sideways. Update CLAUDE.md "after every mistake". Commit skills to git. A `/techdebt` sweep at the end of a session. Prompts: *"Grill me on these changes"*, *"Prove to me this works"*, *"Scrap this, implement the elegant solution."* Paste a Slack bug thread and say "fix". |
 | **30 Mar 2026, "power features"** | Mobile app, `/teleport`, `/remote-control`. `/loop 5m /babysit` and `/schedule`. Hooks: SessionStart loads context, PreToolUse logs every bash command, PermissionRequest routes prompts to a messaging app, Stop nudges Claude to keep going. `claude -w`, `/batch`, `/btw`, `/branch`. `--bare` for fast SDK startup. |
-| **24 May 2026** | **Auto mode is his #1 tip**, the "key building block for multi-clauding". |
+| **16 Apr / 24 May 2026** | Auto mode appears in his Opus 4.7 tips (Apr), then becomes **his #1 tip** (May), the "key building block for multi-clauding". |
+| **25–26 Jul 2026** (YC Startup School) | **Cut ~80% of the prompt** for new models. **Every 6 months, delete your CLAUDE.md, skills and hooks**, and re-add only what the new model still gets wrong. |
+| **11 Sep 2026** | *"Production code written by Claude should have a higher bar than if it was written by a human"*: lint, tests, Claude-driven end-to-end tests, daily Claude fuzzers, automated code and security review. |
 
 The team's habits are also visible in the plugins it ships ([anthropics/claude-code/plugins](https://github.com/anthropics/claude-code)):
 - **`/code-review`** runs in stages:
@@ -512,11 +563,11 @@ Its learning-effects RCT (n=52, Jan 2026) found AI-assisted learners scored **17
 
 ### 4.2 The other labs and tool vendors
 
-**How to read this section.** The research sandbox could fetch GitHub-hosted sources (OpenAI's cookbook and Codex repo, `github/docs`, AWS's AI-DLC, Gemini CLI), so those are verified. A **†** marks claims that come from the research agent's prior knowledge and could not be re-checked this session. That applies mainly to Cursor, Cognition, Stripe, Spotify and other company blogs. Almost every outcome number here is **self-reported by the vendor**. Full detail is in [brief 03](briefs/03-industry-playbooks.md).
+**How to read this section.** The research sandbox could fetch GitHub-hosted sources (OpenAI's cookbook and Codex repo, `github/docs`, AWS's AI-DLC, Gemini CLI), so those are verified. A **†** marks claims that come from the research agent's prior knowledge and could not be re-checked this session. A second verification pass re-checked the company case studies ([brief 10](briefs/10-org-programs-verification.md)) and the tool vendors ([brief 11](briefs/11-tools-landscape-update.md)). Details known only from secondary write-ups are flagged as such. Almost every outcome number here is **self-reported by the vendor**. Full detail is in [brief 03](briefs/03-industry-playbooks.md).
 
 **OpenAI: "harness engineering"**
 - **[Harness engineering](https://openai.com/index/harness-engineering/)** (Ryan Lopopolo, Feb 2026) is the defining industry essay of 2026.
-  - **The experiment:** a five-month internal project shipped a beta with **no hand-written code** and ~1M lines. The team grew from 3 to 7 engineers and averaged ~3.5 PRs per engineer per day (self-reported).
+  - **The experiment:** a five-month internal project shipped a beta with **no hand-written code**: ~1M lines and ~1,500 merged PRs. The team grew from 3 to 7 engineers and averaged ~3.5 PRs per engineer per day (self-reported).
   - **The core move:** stop writing code and design the environment instead: context, tools, constraints and feedback loops.
   - **Context architecture:** they abandoned one big AGENTS.md because it "crowds out the task, the code, and the relevant docs." Instead, a **~100-line AGENTS.md acts as a table of contents** into a structured `docs/` *system of record*: design docs, exec plans, product specs, ARCHITECTURE.md, SECURITY.md. *"What the agent can't see doesn't exist."*
   - **Mechanical enforcement:** custom linters and structural tests enforce a layered architecture. **Error messages are written for the agent**, telling it how to fix the violation.
@@ -542,23 +593,28 @@ Its learning-effects RCT (n=52, Jan 2026) found AI-assisted learners scored **17
 - **Codex's own system prompt** has git-safety rules worth copying into any agent file: *"NEVER revert existing changes you did not make"*, no `git reset --hard` without approval, and "STOP IMMEDIATELY and ask" if unexpected changes appear. Review output is findings-first, ordered by severity.
 - **Delegate / Review / Own.** OpenAI's "Building an AI-native engineering team" guide maps every SDLC phase to what the agent does, what the human checks, and what the human owns.
 - **Symphony** ([repo](https://github.com/openai/symphony)) is an open-source orchestration spec. It watches a Linear board, spawns isolated autonomous runs, and returns **"proof of work"**: CI status, review feedback and walkthrough videos. It "works best in codebases that have adopted harness engineering."
-- **The "agentic software factory"** (Pragmatic Engineer, Sep 2026):
-  - Parallel domain review agents, **risk-tiered**, with a **mandatory human only for high-risk changes**.
-  - A **per-change deploy agent** that picks success signals and builds a dashboard; a human approves the rollout.
-  - "Perf Factory" agents that fix production regressions.
-  - Sevbot, which suggests incident mitigations but never executes them.
+- **The "agentic software factory"** (Pragmatic Engineer, Sep 2026; interviews with seven OpenAI engineers):
+  - Parallel domain review agents, **risk-tiered**. Low-risk areas can opt into **agent auto-approval**; high-risk changes get a **mandatory human** reviewer.
+  - A **per-change deploy agent** picks success signals and builds a dashboard. It acts only after a human approves the rollout.
+  - "Perf Factory" agents fix production regressions.
+  - Sevbot suggests incident mitigations but never executes them.
+  - Load on some delivery systems rose ~10× in ~6 months.
+  - Andrew Ambrosino, the Codex desktop lead, observed that better long-running agents make people run *fewer* things in parallel.
   - No defect or change-failure data is published.
+- **Adoption** (self-reported):
+  - At Codex GA (Oct 2025), OpenAI said nearly all its engineers use Codex, merge 70% more PRs a week, and have Codex review almost every PR.
+  - Lopopolo (Mar 2026): his team "ships 75 PRs a week with Symphony", and he reviews agent PRs *after* merge.
 - **AGENTS.md is now the cross-tool standard.** OpenAI donated it to the Linux Foundation's **Agentic AI Foundation** (9 Dec 2025), alongside MCP and goose. 23 tools read it, and the site claims 60k+ projects use it. Rule: the closest file wins, and chat overrides everything.
 - **Usage data** ([arXiv 2606.26959](https://arxiv.org/abs/2606.26959), OpenAI data):
   - Codex active users grew more than 5× in H1 2026.
   - More than 10% of users run 3+ concurrent agents a week.
   - The share of users submitting tasks estimated at more than 8 human-hours rose ~10×.
-  - The Codex lead observed that better long-running agents make people run *fewer* things in parallel.
 
 **Google**
 - **Internal data:**
   - The RCT found **~21% faster** task completion (n=96).
-  - Sundar Pichai said **~75% of new code is AI-generated and engineer-approved** (Apr 2026, up from 25% in Oct 2024). He also cites a ~10% engineering-velocity gain as the metric that matters.
+  - Sundar Pichai said **~75% of new code is AI-generated and engineer-approved** (Apr 2026, up from 25% in Oct 2024). On Lex Fridman's podcast (Jun 2025) he called a ~10% engineering-velocity gain "the number he cares most about".
+  - **LLM-driven migrations** (Ziftci et al., FSE 2025): 3 developers over 12 months; ~74% of code changes and ~69% of edits were made by the LLM; the developers estimated ~50% time saved.
 - **DORA 2025 + AI Capabilities Model** (see §3). The **2026 ROI report** models a **J-curve dip ("tuition")** before gains, and says returns come mainly from the system (platform, workflow, less rework), not from headcount cuts.
 - **Gemini CLI:**
   - **Just-in-time GEMINI.md discovery**: context files load when a tool touches a path. `context.fileName` can include AGENTS.md.
@@ -567,7 +623,7 @@ Its learning-effects RCT (n=52, Jan 2026) found AI-assisted learners scored **17
 - **Antigravity** (Nov 2025; 2.0 desktop app at I/O, May 2026):
   - A **Manager view** for parallel agents.
   - Agents produce **Artifacts** (plans, screenshots, browser recordings), which are easier to verify than raw tool calls.
-  - Reports that consumer Gemini CLI would be retired in favor of an Antigravity CLI conflict with continued open-source releases through Oct 2026 (unresolved).
+  - **Gemini CLI's individual tiers ended.** Google announced (19 May 2026) that from 18 Jun 2026 Gemini CLI stopped serving Google AI subscription plans (individual Code Assist, AI Pro/Ultra). They moved to the closed-source Go `agy` Antigravity CLI, which keeps skills, hooks and subagents as plugins. The Apache-2.0 Gemini CLI repo still ships (v0.63.0, 6 Oct) for API-key, Vertex and enterprise use.
 - **Addy Osmani** (Google Cloud AI):
   - *"My LLM coding workflow going into 2026"*: a "15-minute waterfall" of a short spec and plan, then small chunks, frequent commits as save points, and a second model reviewing.
   - *"How to write a good spec for AI agents"*: commands, testing, structure, style, git workflow and boundaries, with **Always / Ask first / Never** tiers.
@@ -604,16 +660,29 @@ Its learning-effects RCT (n=52, Jan 2026) found AI-assisted learners scored **17
 
 **AWS**
 - **AI-DLC** ([repo](https://github.com/awslabs/aidlc-workflows)): "adaptive workflow steering rules" with 5 phases and 33 stages, human approval gates, and a 118-event audit trail. It runs inside Claude Code, Kiro, Codex, Cursor and Copilot. This is the heaviest-process end of the spectrum.
-- **Kiro**: specs (requirements in EARS notation†, design, tasks), steering files, hooks, and a headless CLI.
-- **Q Developer Java upgrades**† (self-reported): ~4,500 developer-years saved.
-- A reported Kiro-linked AWS disruption† (disputed by Amazon) is a cautionary data point on agent permissions.
+- **Kiro** (GA 17 Nov 2025):
+  - Specs with EARS-notation requirements, design and tasks, plus spec-derived property-based tests.
+  - Checkpoints and rewind, steering files, hooks and a headless CLI.
+  - By Oct 2026 it spans IDE, CLI, web, mobile and "Crew". Amazon named it the recommended internal tool in Nov 2025.
+- **Q Developer Java upgrades** (Andy Jassy, Aug 2024; self-reported): ~4,500 developer-years and ~$260M a year saved. 79% of auto-generated code reviews shipped without changes.
+- **Agent incidents and "controlled friction":**
+  - **The Kiro outage.** The FT reported a 13-hour outage of AWS Cost Explorer in one mainland-China region in Dec 2025, after Kiro chose to "delete and recreate the environment".
+  - **Amazon's response.** It blamed misconfigured access ("user error… not AI") and added mandatory peer review for production access.
+  - **The retail reset.** After retail outages in Mar 2026, Amazon imposed a **90-day "code safety reset"** on ~335 Tier-1 systems. Major changes now need two reviewers, and AI-assisted changes by junior and mid-level engineers need senior sign-off (FT, via secondary write-ups).
 
 **Meta**
-- **JiTTesting** (Jan 2026; numbers secondary): LLM-generated "catching" tests created per diff and **never committed**. Tests become ephemeral, per-change artifacts.
-- Earlier: TestGen-LLM† and CodeCompose†.
+- **JiTTesting** (Jan 2026; FSE '26 industry track): LLM-generated "catching" tests created per diff and **never committed**.
+  - Of 41 catches, 8 were true positives and 4 were serious.
+  - LLM assessors cut human review load by ~70%.
+  - Tests become ephemeral, per-change artifacts.
+- **Earlier work:**
+  - TestGen-LLM (2024): 73% of recommendations accepted into production.
+  - ACH mutation-guided tests (2025): 73% accepted by engineers.
+  - CodeCompose (2023): 22% acceptance; 8% of the code its users typed.
+- **Management:** "AI-driven impact" became a core performance-review expectation for 2026. By mid-2026 Meta reportedly planned to crack down on employee token use.
 
-**Cursor**†
-- **"Best practices for coding with agents" (Jan 2026):**
+**Cursor** (verified via secondary write-ups; † marks what is still unconfirmed)
+- **"Best practices for coding with agents" (Jan 2026; specifics†):**
   - Start in plan mode.
   - **If output diverges, revert and refine the plan rather than patching through follow-ups.**
   - Keep rules short and add one only after a repeated mistake.
@@ -622,43 +691,57 @@ Its learning-effects RCT (n=52, Jan 2026) found AI-assisted learners scored **17
   - Practice TDD.
 - **"Scaling long-running autonomous coding" (Jan 2026):**
   - Flat peer coordination through shared files and locks failed: 20 agents produced the throughput of 2–3.
-  - **Planners → workers → a judge, with fresh cycles**, worked. It built a browser (~1M LOC) in about a week.
-  - The post found GPT-5.2 better than Opus 4.5 for very long autonomy ("Opus tends to stop earlier").
-- **"Dynamic context discovery":** provide fewer details up front; long tool outputs, chat history and terminals become files; MCP tools are lazy-loaded (−46.9% tokens in an A/B test).
-- **Cursor 3** (Apr 2026) introduced the Agents Window (§11).
+  - **Planners → workers → a judge, with fresh cycles**, worked. It built a browser (~1M LOC) in about a week and a Solid→React migration (+266K/−193K lines).
+  - Cursor found GPT-5.2-class models best for very long autonomy (the exact Opus comparison quote is unverified†).
+  - Critics noted failing CI at launch and a ~1.6M-line Rust codebase.
+- **"Dynamic context discovery":** provide fewer details up front; long tool outputs, chat history and terminals become files; MCP tools are lazy-loaded (−46.9% total tokens *in runs that called an MCP tool*; vendor A/B test).
+- **Bugbot** (GA Jul 2025; vendor-reported): >1M PRs reviewed in beta, >1.5M issues flagged, >50% fixed before merge.
+- **Composer 2** (Mar 2026) is built on the open-weight Kimi K2.5.
+- **Graphite:** Cursor agreed to buy it in Dec 2025.
+- **Cursor 3** (Apr 2026) made the Agents Window the primary interface, with the editor secondary (§11).
 
-**Cognition (Devin, Windsurf)**†
+**Cognition (Devin, Windsurf)** († = still unconfirmed)
 - **"Don't Build Multi-Agents"** (Jun 2025): *share full context and traces*; "actions carry implicit decisions, and conflicting decisions carry bad results." Cognition later shipped read-only retrieval subagents (SWE-grep). The line it draws is **no parallel writers**.
-- **"Coding Agents 101":**
+- **"Coding Agents 101"**†:
   - Say *how*, not just *what*.
   - Give the agent CI, tests, types and linters.
   - Delegate in verifiable steps.
   - Start fresh rather than fight a confused session.
-- **Devin's 2025 review:** "senior-level at codebase understanding but junior at execution". Best on clear 4–8-hour tasks such as migrations, vulnerability fixes and tests.
+- **Devin's 2025 review** (14 Nov 2025; vendor-reported): 67% of PRs merged, vs 34% a year earlier; "4x faster". Best on migrations, vulnerability fixes, tests and small tickets. (The "senior-level understanding, junior execution" phrasing is unverified†.)
+- **2026 changes:**
+  - Apr 2026: Cognition said "the landscape is different" and added multi-agent flows. **Devin Fusion** pairs a frontier main agent with a cheap "sidekick" (vendor eval: 47.9 at $2.38/task, vs Opus 4.8's 48.8 at $3.24).
+  - Windsurf was renamed **Devin Desktop** (2 Jun).
+  - **SWE-2** (10 Sep) is post-trained from Kimi K3.
 
 **Other vendors**
-- **Amp**†: no model picker; read-only "Oracle" and "Librarian" subagents; shareable threads; **handoff to a fresh thread instead of compaction**.
+- **Amp:** no model picker; read-only "Oracle" (a stronger reasoning model) and "Librarian" (remote code search) subagents; **handoff to a fresh thread** (Jan 2026) instead of forking or compaction. Public threads ended 2 Jun 2026.
 - **Factory:**
-  - Agent Readiness: 8 pillars and 5 levels.
-  - It published **ESLint rules designed to steer agents** ([repo](https://github.com/Factory-AI/eslint-plugin)): every file needs a test file, structured logging, middleware on API routes. *"Encode taste as lint rules, not prose."*
-- **Vercel:** a compressed 8KB docs index in AGENTS.md hit 100% on its Next.js 16 eval vs 79% for skills. That is a vendor eval with 19 tasks, so the gap is ~4 tasks.
+  - Agent Readiness: 8 pillars at launch (9 in the current docs), 5 levels, and 80% of a level's criteria needed to advance.
+  - It published **ESLint rules designed to steer agents** ([repo](https://github.com/Factory-AI/eslint-plugin)): every file needs a test file, structured logging, middleware on API routes. Factory advises copying the ideas rather than importing the plugin. The lesson: encode taste as lint rules, not prose.
+- **Vercel:** a compressed 8KB docs index in AGENTS.md hit 100% on its Next.js 16 eval, against 79% for skills given explicit instructions and 53% for default skills. **The skill was never invoked in 56% of eval cases.** It is a vendor eval with ~19 tasks (the count is per a secondary digest), so the gap is about 4 tasks.
 - **Augment:** the Context Engine MCP for semantic indexing of very large repos. Its quality claims are vendor-reported.
 - **JetBrains:** Junie reads AGENTS.md; JetBrains publishes a guidelines catalog.
 - **Block:** goose, now under the AAIF.
-- **Replit**†: an agent **deleted a user's production database during a code freeze** (Jul 2025). This is the canonical case for strict dev/prod separation.
+- **Replit:** an agent **deleted a user's production database during a code freeze** (Jul 2025, day 9 of Jason Lemkin's trial). Replit then shipped automatic dev/prod database separation, a planning-only mode and one-click restore. This is the canonical case for strict environment separation.
 
 ### 4.3 Big engineering orgs' internal agent programs
 
 | Org | Program | What's distinctive | Reported outcome (self-reported) |
 |---|---|---|---|
-| **Stripe**† | "Minions" (Feb 2026) | One-shot, unattended agents triggered from Slack, CLI or tickets. Each gets a pre-warmed **devbox (~10 s)**, the same environment humans use. "Blueprints" mix deterministic nodes (lint, push, CI) with agent loops. A central MCP "Toolshed" (~500 tools). **At most two CI rounds, then back to a human.** | 1,000+ merged PRs/week; humans review, no human-written code |
-| **Spotify**† | "Honk" background agent | Built on Fleet Management for migrations. Standardized on **Claude Code via the Agent SDK**. One change per run. A restricted "verify" tool (format, lint, tests). An **LLM judge compares the diff to the prompt and vetoes ~25% of runs**; about half of those self-correct. | 1,500+ merged PRs; 60–90% time savings |
-| **Ramp** | "Inspect" ([post](https://builders.ramp.com/post/why-we-built-our-background-agent)) | Modal sandboxes with fresh snapshots. OpenCode harness. The same observability and feature-flag tools engineers use. Multiplayer sessions in Slack, web and Chrome. An [open-source clone](https://github.com/ColeMurray/background-agents) shows the architecture. | ~30% of merged PRs† |
-| **StrongDM** | "Software Factory" (Feb 2026) | "Code must not be written by humans… must not be reviewed by humans." Holdout **scenarios** kept outside the repo. A **Digital Twin Universe** of SaaS clones. Public NLSpecs ([attractor](https://github.com/strongdm/attractor)). | "$1,000 on tokens today per human engineer" |
-| **Shopify** | Lütke memo (Apr 2025) + **Roast** | "Reflexive AI usage is now a baseline expectation." Teams must show why AI can't do the work before asking for headcount. [Roast](https://github.com/Shopify/roast) = deterministic orchestration around agent steps. | autoresearch-driven Liquid speedup (§5) |
-| **Airbnb**† | Enzyme→RTL migration (Mar 2025) | A per-file state machine with retry loops. 40–100k-token prompts with related files and example tests. "Sample, tune, sweep." | 3.5k files in 6 weeks vs a 1.5-year estimate |
-| **Uber**† | uReview | Precision over recall: confidence scoring, dedup, category suppression | ~75% of comments rated useful |
-| **Block** | Fable orchestration (Oct 2026, [case study](https://claude.com/resources/articles/how-block-orchestrates-claude-fable-across-thousands-of-pull-requests)) | Fable plans, Opus or Sonnet workers edit. Cheap regex checks outside the model. **Two human approvals** for merges to main and deploys. | Thousands of PRs |
+| **Stripe** | "Minions" (Feb 2026; details via secondary write-ups) | One-shot, unattended agents triggered from Slack, CLI or web. Each gets a pre-warmed **devbox (~10 s)** with the monorepo and warm caches, the same environment humans use. The harness is a fork of Block's goose. "Blueprints" are state machines mixing deterministic steps (lint, push) with agent loops. A central MCP "Toolshed" (400+, later ~500 tools). **At most two CI rounds, then back to a human.** | 1,000+ merged PRs/week (Part 1), then 1,300+ (Part 2). Every PR human-reviewed; none human-written. |
+| **Spotify** | "Honk" background agent | Built on Fleet Management, which handles ~half of all Spotify PRs. Standardized on **Claude Code via the Agent SDK** (Jul 2025). One change per run. Format, build and test verifiers must pass before a PR opens. An **LLM judge compares the diff to the prompt and vetoes ~25% of runs** (mostly scope creep); about half of those then self-correct. | 1,500+ merged PRs (Nov 2025). "Up to 90%" of migration time saved (vendor page). ~1,000 merged PRs per 10 days after a 2026 rewrite. Co-CEO Söderström (Feb 2026): its best developers "have not written a single line of code since December." |
+| **Ramp** | "Inspect" ([post](https://builders.ramp.com/post/why-we-built-our-background-agent)) | Modal sandboxes with fresh snapshots. OpenCode harness. The same observability and feature-flag tools engineers use. Multiplayer sessions in Slack, web and Chrome. An [open-source clone](https://github.com/ColeMurray/background-agents) shows the architecture. | ~30% of merged PRs in the frontend and backend repos (Jan 2026). Reportedly over half by Feb 2026 (unverified). |
+| **StrongDM** | "Software Factory" (Feb 2026) | "Code must not be written by humans… must not be reviewed by humans." Holdout **scenarios** kept outside the repo. A **Digital Twin Universe** cloning Okta, Jira, Slack and Google Docs/Drive/Sheets. Public NLSpecs ([attractor](https://github.com/strongdm/attractor)). | "$1,000 on tokens today per human engineer" |
+| **Shopify** | Lütke memo (Apr 2025) + **Roast** + **River** | *"Using AI effectively is now a fundamental expectation of everyone at Shopify."* AI usage is part of performance reviews, and teams must show why AI can't do the work before asking for headcount. [Roast](https://github.com/Shopify/roast) provides deterministic orchestration around agent steps. "River" (May 2026) is an internal coding agent that works only in public Slack channels, so everyone learns from everyone's prompts. | Liquid parse+render 53% faster via an autoresearch loop (§5). Sep 2026: dropped React Native for two native apps, because agents make maintaining two codebases affordable. |
+| **Airbnb** | Enzyme→RTL migration (Mar 2025) | A per-file state machine with retry loops (which beat prompt tuning). 40–100k-token prompts with related files and example tests. "Sample, tune, sweep." | ~3.5k files in 6 weeks vs a 1.5-year estimate: 75% done in 4 hours, 97% after 4 days, the last 3% finished by hand |
+| **Uber** | uReview | Precision over recall: confidence scoring, dedup, suppression of low-confidence comments | Covers >90% of ~65k weekly diffs. ~75% of comments rated useful; >65% addressed (vs 51% of human reviewers' comments). ~1,500 dev-hours/week saved. Also: 25% of commits went through Claude Code (COO, May 2026), and Uber used up its 2026 AI budget within months. |
+| **Intercom** | Claude Code across R&D | A public goal to double R&D productivity in 12 months | Reached in 9 months. PRs per R&D person rose from 16 to 33 a month; 93.6% of PRs are agent-driven (self-reported). |
+| **Block** | Fable orchestration (Oct 2026, [case study](https://claude.com/resources/articles/how-block-orchestrates-claude-fable-across-thousands-of-pull-requests)) | Fable plans; "up to dozens" of Opus or Sonnet workers make the edits. Regex or small-classifier guardrails run outside the model. Merges to main, deploys and flag changes stay "up to people", and **two humans approve each deploy**. Block benchmarks every effort level of every model, and agents run regular cleanup passes against tech debt. | "A thousand" merged PRs per migration, with multi-thousand-PR migrations. No quality data published. |
+
+**Mandates and adoption** (self-reported):
+- Coinbase's CEO fired engineers who hadn't onboarded to AI tools within a week (Aug 2025). AI wrote >40% of Coinbase's code by Sep 2025, against a 50% goal.
+- Robinhood: ~50% of new code (Jul 2025).
+- Zapier hires against a four-level AI-fluency rubric (v2, Mar 2026).
 
 The common architecture: a background agent **triggered from where the work lives** (Slack, issues, Linear) runs in an **isolated, pre-warmed sandbox** using the same tools humans use. **Deterministic gates run first** (lint, then capped CI rounds). It returns a **PR with proof of work**, which gets **risk-tiered review**.
 
@@ -683,11 +766,14 @@ The common architecture: a background agent **triggered from where the work live
 
 **Where they split:**
 - **One agent or many.** Cognition and Lopopolo say one agent should do the whole job. Cursor swarms, Copilot `/fleet` and Antigravity's Manager view go parallel. Common ground: *read-only* parallel helpers are fine; parallel *writers* need a planner hierarchy and isolation.
-- **Do humans review code?** StrongDM says no. OpenAI says "aren't required," but its factory still mandates a human for high-risk changes. GitHub's defaults, Stripe and Block keep human approval. DORA's stability data argues for caution.
+- **Do humans review code?** StrongDM says no. OpenAI says "aren't required," but its factory still mandates a human for high-risk changes. GitHub's defaults, Stripe and Block keep human approval. Lopopolo reviews agent PRs *after* merge. Amazon moved the other way after its 2026 outages, adding second reviewers and senior sign-off on AI-assisted changes. DORA's stability data argues for caution.
 - **Heavy specs or light plans?** spec-kit, Kiro, AI-DLC and Conductor sit at the heavy end. Cursor's "revert and re-plan" and Codex's "outcome-first" lean prompting sit at the light end. Osmani's "15-minute waterfall" is the middle.
 - **Static or dynamic context?** A static index wins for must-know facts (Vercel); dynamic discovery wins for everything else. The practical answer is a small static map plus on-demand depth.
 - **Build or buy background agents?** Stripe, Ramp and StrongDM built their own; Spotify standardized on Claude Code; others buy Copilot, Devin, Codex cloud or Jules.
-- **What to measure.** "% of code AI-generated" (Google 75%) vs velocity (~10%) vs outcomes. Lopopolo: tokens and lines are inputs, not goals.
+- **What to measure.** "% of code AI-generated" (Google 75%) vs velocity (~10%) vs outcomes. Lopopolo: tokens and lines are inputs, not goals. In mid-2026 the "tokenmaxxing" push reversed:
+  - Meta reportedly cracked down on token use.
+  - Microsoft said "tokenmaxxing is not what we are optimizing for."
+  - DORA pointed to outcome metrics such as Salesforce's "Agentic Work Units".
 
 ## 5. How the best individuals work: the practitioner canon
 
@@ -697,7 +783,7 @@ Most personal blogs were unreachable from the research sandbox. Brief 05 therefo
 
 1. **Most of their code is now written by agents.** Armin Ronacher reported ">90% AI-written" for a 40k-line Go service (Sep 2025). Steinberger said "pretty much 100%" (Oct 2025). Karpathy flipped from 80% manual to "80% agent coding" (Dec 2025). Willison said "probably 95% of the code that I produce, I didn't type myself" (Apr 2026). Many name the **"November 2025 inflection"** (Opus 4.5, GPT-5.1/5.2) as the turning point. Karpathy: coding agents *"basically didn't work before December and basically work since."*
 2. **The core skill is verification, not prompting.** "Use red/green TDD" ("it's like five tokens, and that works"). "First run the tests." "Your job is to deliver code you have proven to work" (Willison). Carlini: *"it is easy to see tests pass and assume the job is done, when this is rarely the case."*
-3. **Context engineering replaced prompt engineering as the frame.** Examples: Karpathy's definition; Breunig's four failure modes (poisoning, distraction, confusion, clash); Dex Horthy's "keep utilization at 40–60%"; Manus's offload / reduce / isolate.
+3. **Context engineering replaced prompt engineering as the frame.** Examples: Karpathy's definition; Breunig's four failure modes (poisoning, distraction, confusion, clash); Dex Horthy's 40–60% context utilization (Aug 2025), tightened to avoiding a ~40%+ "dumb zone" (Nov 2025); HumanLayer's ~150–200-instruction budget for CLAUDE.md; Manus's KV-cache-first design (cached tokens are ~10× cheaper), "mask, don't remove" tools, and todo.md recitation.
 4. **For coding agents, CLIs and skills beat MCP.** Playwright MCP costs ~13.7k tokens against a 225-token README for four scripts (Mario Zechner). GitHub MCP costs ~23k tokens against `gh` at zero (Steinberger). Willison called 2025 "the (only?) year of MCP".
 5. **Human review, not agent speed, is now the bottleneck.** Thorsten Ball and Armin each wrote some version of *"I too am the bottleneck now."* Steinberger calls himself a "Claudoholic". Willison says he is "wiped out" by 11am running four agents. Yegge wrote "The AI Vampire". **Fatigue and addiction are real occupational hazards.**
 
@@ -761,12 +847,12 @@ Most personal blogs were unreachable from the research sandbox. Brief 05 therefo
 - **Jun 2025:** coined "context engineering".
 - **Oct 2025:** agents were "net unhelpful" for the novel, "intellectually intense" nanochat.
 - **Dec 2025:** *"I've never felt this much behind as a programmer."*
-- **Jan 2026:** "80% agent coding"; *"I really am mostly programming in English now."* Setup: a few Claude Code sessions in Ghostty on the left and an IDE on the right for viewing code and manual edits.
+- **Jan 2026:** "80% agent coding"; *"I really am mostly programming in English now."* Setup: a few Claude Code sessions in Ghostty on the left and an IDE on the right for viewing code and manual edits. He also warned to "watch them like a hawk" and gave his advice: *"Don't tell it what to do, give it success criteria."* He predicted skill "atrophy" and called 2026 "the year of the slopacolypse".
 - **Feb 2026:** adopted "agentic engineering".
 - **Mar 2026, `autoresearch`:**
   - The human edits only `program.md`.
   - The agent edits one file, under a fixed 5-minute run budget, against one scalar metric (~100 experiments overnight).
-  - Tobi Lütke reused it to make Shopify's Liquid parse+render 53% faster.
+  - Shopify's Tobi Lütke reused the pattern (Pi plus a pi-autoresearch plugin, ~120 experiments, checked by 974 tests). Liquid parse+render got 53% faster with 61% fewer allocations (PR #2056, Mar 2026).
 
 **Geoffrey Huntley (Ralph)**
 - **The Ralph loop:** `while :; do cat PROMPT.md | claude ; done`. One task per loop, a fresh context each iteration, the plan on disk, and **"backpressure"** from tests, types and lints. *"Each time Ralph does something bad, Ralph gets tuned — like a guitar."*
@@ -789,7 +875,8 @@ Most personal blogs were unreachable from the research sandbox. Brief 05 therefo
 - **12-factor agents:** "own your context window".
 - **ACE-FCA** (Aug 2025): research → plan → implement with frequent intentional compaction at 40–60% context use. *"I can't read 2000 lines of golang daily. But I can read 200 lines of a well-written implementation plan."* His public command files (`research_codebase`, `create_plan` with "What We're NOT Doing" and automated vs manual verification, `implement_plan`, handoffs) are among the most copied artifacts in the field.
 - **2026 revision:**
-  - **"Why Software Factories Fail"**: training gives "no penalty for eroding codebase maintainability".
+  - **"Why Software Factories Fail"** (his AI Engineer World's Fair 2026 keynote): HumanLayer ran a "full lights-off" experiment from Jul 2025 and was rewriting by hand by Nov 2025. Training gives "no penalty for eroding codebase maintainability".
+  - **QRSPI** splits planning into questions → objective research → a ~200-line design → a structure outline → a plan.
   - New flow: product review → architecture → program design (types and signatures) → vertical slices reviewed **100–200 lines at a time**.
   - *"Read the dang code."*
 
@@ -815,6 +902,15 @@ Most personal blogs were unreachable from the research sandbox. Brief 05 therefo
 - **Matt Pocock:** small composable skills: `grill-me` → `to-spec` → `to-tickets` (tracer bullets) → `/tdd` vertical slices → `/code-review`. *"The rate of feedback is your speed limit."*
 - **Ryan Carson:** `ai-dev-tasks` (PRD → tasks → one sub-task at a time) and `snarktank/ralph` (`prd.json` with `passes` flags, `progress.txt`, AGENTS.md learnings).
 - **Nicholas Carlini:** the 16-agent C compiler (§4.1).
+- **Shrivu Shankar** ("How I use every Claude Code feature", Nov 2025):
+  - CLAUDE.md is a "constitution" with limited token "ad space". Never `@`-include whole docs; tell Claude *when* to read them.
+  - Prefer `/clear` plus "Document & Clear" (write progress to a file, clear, resume) over `/compact`.
+  - "Master-Clone" subagents (the main agent spawns copies of itself) over "Lead-Specialist" ones.
+  - Hooks that block at *submit* time rather than at every write.
+- **Diwank Singh** (Julep, "Field notes from shipping real code with Claude", Jun 2025): `AIDEV-NOTE`/`AIDEV-TODO` anchor comments the agent maintains, and **humans write the tests**.
+- **Lee Robinson** (Cursor; secondary sources): moved cursor.com off its CMS in about three days for ~$260 of tokens. Argues that agents raise the cost of unnecessary abstractions.
+- **Sankalp** (Claude Code 2.0 guide, Dec 2025; secondary sources): hand off to a fresh session with a `/handoff` command at ~60% context.
+- **Jeremy Howard** (the critical view): vibe coding is a "slot machine". He favors small, understood steps (his SolveIt / "dialog engineering" approach).
 
 ### 5.3 Who does what (latest known state)
 
@@ -904,7 +1000,7 @@ This section brings §3–§5 together into one working method. Each principle n
 
 **Ask for evidence, not claims:** test output, the command that was run, a screenshot.
 
-**Write tests first where you can.** "Use red/green TDD" costs about five tokens and works (Willison). Kent Beck's warning signs: loops, unrequested features, and **tests being disabled or deleted**. Forbid editing tests ("It is unacceptable to remove or edit tests") and protect test paths with hooks.
+**Own the acceptance tests.** The research shows that *human-written* tests are what move results (TDFlow: 94% on SWE-bench Verified with them). Merely prompting an agent to write more tests didn't change outcomes in a controlled ablation (§3.10). So write or approve the tests that define "done" yourself, then let the agent use red/green TDD inside that frame. "Use red/green TDD" costs about five tokens and works (Willison). Kent Beck's warning signs: loops, unrequested features, and **tests being disabled or deleted**. Forbid editing tests ("It is unacceptable to remove or edit tests") and protect test paths with hooks.
 
 **For UI, verify in a real browser.** Use Claude in Chrome, Playwright, or the Chrome DevTools MCP/CLI. Anthropic found browser-level end-to-end checks "dramatically improved" long-running harnesses.
 
@@ -965,7 +1061,7 @@ This section brings §3–§5 together into one working method. Each principle n
 | **Explore → Plan → Code → Commit** (Anthropic; `feature-dev` plugin) | The default for multi-file changes | Planning overhead on trivial tasks |
 | **Interview → SPEC.md → fresh session** (Anthropic; Harper Reed's "one question at a time") | New features with unclear requirements | — |
 | **Research → Plan → Implement → QRSPI** (HumanLayer; [ACE-FCA](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/ace-fca.md)) | Large, unfamiliar, brownfield codebases | 2026 revision: review ~200-line designs and 100–200-line slices, *and* "read the dang code" |
-| **Spec-driven development** ([spec-kit](https://github.com/github/spec-kit), [OpenSpec](https://github.com/Fission-AI/OpenSpec), Kiro, BMAD, AWS AI-DLC, Google Conductor) | Greenfield work, teams needing an audit trail | Piles of markdown to review; one process forced onto every task size; no controlled evidence it beats plan mode ([Böckeler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)). OpenSpec is the lighter option for existing codebases. |
+| **Spec-driven development** ([spec-kit](https://github.com/github/spec-kit), [OpenSpec](https://github.com/Fission-AI/OpenSpec), Kiro, BMAD, AWS AI-DLC, Google Conductor) | Greenfield work, teams needing an audit trail | Piles of markdown to review; one process forced onto every task size; no controlled evidence it beats plan mode. Böckeler watched Kiro turn a small bug into 4 user stories with 16 acceptance criteria: *"I'd rather review code than all these markdown files"* ([Böckeler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)). OpenSpec is the lighter option for existing codebases. |
 | **Superpowers** ([obra](https://github.com/obra/superpowers)) | Disciplined solo work | Token-heavy; overkill for one-line fixes |
 | **Compound engineering** ([Every](https://github.com/EveryInc/compound-engineering-plugin)) | Long-lived codebases | Prune the accumulated `docs/solutions/` |
 | **Osmani's "15-minute waterfall"** | The pragmatic middle ground | — |
@@ -1005,6 +1101,16 @@ This section brings §3–§5 together into one working method. Each principle n
 **Separate generator and evaluator.** *"Agents reliably skew positive when grading their own work."* Use a skeptical evaluator agent, driven by Playwright, with a "sprint contract" defining done.
 
 **Put a budget on everything:** `--max-turns`, `--max-budget-usd`, `maxEffortLevel`, usage-credit caps, and cloud spend caps.
+
+**Scheduled and unattended agents (Anthropic, Oct 2026).** Anthropic's guide "Building effective agent automations" gives six rules. Its content is known only from secondary write-ups ([brief 09](briefs/09-anthropic-oct-2026-guides.md)):
+1. Keep **bookmarks** so each run knows where the last one stopped.
+2. Treat a failed read as **"unreadable", not "quiet"**.
+3. **Re-check every item against its live source** before acting.
+4. **Confirm the action, then record the state.**
+5. Keep preferences **read-only**.
+6. Apply **least privilege**.
+
+These apply equally to `/loop`, routines and your own cron agents.
 
 ### 6.8 Review as risk-tiered verification (E, V, P)
 
@@ -1213,7 +1319,7 @@ Anthropic's stated principle is to **contain at the environment layer first**. I
   - the CLI (fullscreen TUI, `/voice`, a `/diff` panel);
   - the desktop app (parallel sessions, in-app browser, iOS Simulator pane);
   - VS Code and JetBrains;
-  - **cloud sessions** (`claude --cloud "task"`, `--teleport` to pull a session back locally, `/autofix-pr`);
+  - **cloud sessions** (`claude --cloud "task"`, `--teleport` to pull a session back locally, `/autofix-pr`). A cloud session starts from a fresh clone of the **remote** branch, so **push first**. Only project-level configuration (CLAUDE.md, rules, skills, agents) travels with it, so commit your shared config. Handoff only goes one way: you can pull a cloud session down with `--teleport`, but you can't push a terminal session up. (Anthropic's Oct 2026 cloud-sessions field guide, via secondary write-ups);
   - **Remote Control** (drive a local session from your phone) and push notifications;
   - Claude in Chrome (GA June 2026);
   - Slack ("Claude Tag" for Team and Enterprise);
@@ -1230,16 +1336,18 @@ Anthropic's stated principle is to **contain at the environment layer first**. I
 
 ### 7.9 Plans, limits and cost
 
-**Subscriptions** use rolling **5-hour windows plus weekly caps**, shared across the Claude apps and Claude Code.
+**Subscriptions** use rolling **5-hour windows plus weekly caps**, shared across the Claude apps and Claude Code. Anthropic publishes **no hour or message counts**, and says it may also apply weekly and monthly caps.
 
 | Plan | Price | Usage |
 |---|---|---|
-| Pro | $20/mo | baseline |
-| Max | $100/mo | 5× Pro |
-| Max | $200/mo | 20× Pro |
-| Team Premium | $100–125/seat | 5× standard seats |
+| Pro | $20/mo ($17 on an annual plan) | baseline |
+| Max | $100/mo (monthly billing only) | 5× Pro per 5-hour session |
+| Max | $200/mo (monthly billing only) | 20× Pro per 5-hour session |
+| Team Premium | $100 (annual) or $125 (monthly) per seat | 5× standard seats |
 
-Since 7 Oct 2026, Max also includes $100–200/month of API credits. These credits work for the API and Agent SDK, **not** for Claude Code.
+**Limits change often.** From 26 Mar 2026, 5-hour limits drained faster on weekday mornings (05:00–11:00 PT; secondary sources). On 6 May 2026, Anthropic doubled Claude Code's 5-hour limits for Pro, Max, Team and seat-based Enterprise, and removed the peak-hour reduction for Claude Code on Pro and Max. It credited a compute deal with SpaceX ([announcement](https://www.anthropic.com/news/higher-limits-spacex)).
+
+Since 7 Oct 2026, Max also includes API credits: $100/month on 5× and $200/month on 20×, with no rollover. Team gets a pooled amount per seat. These credits work for the API, Managed Agents and the Agent SDK, **not** for interactive Claude Code.
 
 **Checking usage:** `/usage` attributes usage to individual skills, subagents, plugins and MCP servers. The status line exposes the 5-hour and 7-day percentages.
 
@@ -1263,15 +1371,16 @@ Since 7 Oct 2026, Max also includes $100–200/month of API credits. These credi
 | 24 Nov 2025 | Opus 4.5 |
 | Dec 2025 | `.claude/rules/`, Claude in Chrome (beta), LSP tool |
 | Jan 2026 | `context: fork` skills; MCP tool search on by default |
-| Feb 2026 | Opus 4.6, agent teams, fast mode, `--worktree`, Remote Control, auto memory, `/batch` |
-| Mar 2026 | `/loop` and cron, `/effort`, channels, **auto mode** (24 Mar) |
-| Apr 2026 | Routines, Opus 4.7, `xhigh`, `/ultrareview` |
+| Feb 2026 | Opus 4.6, agent teams, fast mode, `--worktree`, Remote Control (24 Feb), auto memory, `/batch` |
+| Mar 2026 | `/loop` and cron, `/effort`, channels (research preview, 19 Mar), **auto mode** (24 Mar) |
+| Apr 2026 | Routines, Opus 4.7, `xhigh`, `/ultrareview`, mobile push for Remote Control (15 Apr) |
+| 6 May 2026 | Claude Code 5-hour limits doubled |
 | 11 May 2026 | **Agent view**, **`/goal`** |
 | 28 May 2026 | **Dynamic workflows**, Opus 4.8 |
 | 9 Jun 2026 | Fable 5 / Mythos 5 |
 | 30 Jun 2026 | Sonnet 5; background subagents by default |
 | 24 Jul 2026 | Opus 5 |
-| Aug 2026 | Cross-session messaging, self-hosted environments, auto mode default (14 Aug) |
+| Aug 2026 | Cross-session messaging, self-hosted environments, auto mode default (14 Aug), device cards and Remote Control out of preview |
 | 1 Sep 2026 | Fable 5.1 |
 | 18 Sep 2026 | Native AGENTS.md |
 | 22 Sep 2026 | **Opus 5.5 default** |
@@ -1281,7 +1390,13 @@ Since 7 Oct 2026, Max also includes $100–200/month of API credits. These credi
 
 ## 8. The home rig: complete personal setups, from starter to agent fleet
 
-Full detail is in [brief 07](briefs/07-home-rig.md). Hardware and non-Anthropic prices could not be verified this session; treat them as approximate.
+Full detail is in [brief 07](briefs/07-home-rig.md), updated by the second-pass [brief 14](briefs/14-home-rig-update.md).
+
+**Hardware got much more expensive in 2026** because of a DRAM and GDDR7 shortage. These prices come from secondary sources, so check the vendor page before buying:
+- DGX Spark 128 GB: $3,999 at launch → $4,699 (Feb) → $6,950 (Oct).
+- Framework Desktop (Strix Halo) 128 GB: $1,999 → $2,459.
+- Mac mini: from $899 (M6, up to 32 GB); about $2,699 for an M5 Pro with 64 GB.
+- RTX 5090: about $4,300 on the street, against a $1,999 list price.
 
 ### 8.1 Use the first-party features first
 
@@ -1290,16 +1405,16 @@ In 2025 the home-rig ecosystem existed to fill gaps in Claude Code. Most of thos
 | 2025 gap | First-party answer in 2026 |
 |---|---|
 | Parallel sessions | `claude -w` worktrees; `claude agents` agent view with a keep-alive daemon |
-| Coding from your phone | Remote Control (Feb) with mobile push (Apr) and **device cards** (Aug): tap your home machine in the Claude app to start a session there |
+| Coding from your phone | Remote Control (24 Feb) with mobile push (15 Apr) and **device cards** (Aug, when Remote Control left research preview): tap your home machine in the Claude app to start a session there |
 | Cron and jobs | `/loop`, desktop scheduled tasks, cloud **routines** |
-| Chat-ops | **Channels**: Telegram, Discord or iMessage, with an allowlist |
+| Chat-ops | **Channels** (still a research preview, since Mar): Telegram, Discord or iMessage, with an allowlist |
 | Agent-to-agent | Cross-session messaging |
-| Dictation | `/voice` (doesn't count against usage limits) |
+| Dictation | `/voice` (doesn't count against usage limits; transcribed in Anthropic's cloud) |
 | Usage tracking | `rate_limits` fields in the status line JSON; `/usage` attribution |
 
-Third-party orchestrators keep dying, so build on tools that **degrade gracefully to plain `git worktree` + tmux**:
-- **Shut down or winding down:** Terragon (closed Jan 2026), Crystal (deprecated Feb 2026), Vibe Kanban ("sunsetting"). Omnara pivoted to something else.
-- **Still active:** Conductor (Mac), Superset, Emdash (cross-platform, YC W26) and Claude Squad.
+Third-party orchestrators keep dying, so build on tools that **degrade gracefully to plain `git worktree` + tmux**. Status as of 11 Oct 2026, from each repo:
+- **Gone or community-only:** Terragon (closed Jan 2026); Crystal (deprecated Feb 2026 and replaced by Nimbalyst); Vibe Kanban (its company shut down on 10 Apr 2026, leaving a local-only community app). Omnara is now a self-hostable managed-agent platform.
+- **Active:** [Orca](https://github.com/stablyai/orca) (89k★, MIT, cross-platform with a phone app), [cmux](https://github.com/manaflow-ai/cmux) (28k★, a Ghostty-based macOS terminal with agent notifications), Superset, Orchestrator.inc, Emdash, Conductor (Mac; Pro at $50/mo adds Conductor Cloud) and Nimbalyst. Claude Squad has slowed.
 
 ### 8.2 Component-by-component
 
@@ -1310,16 +1425,16 @@ Third-party orchestrators keep dying, so build on tools that **degrade gracefull
 | **Editor alongside** | VS Code/Cursor extension; Zed via ACP; Neovim via `claudecode.nvim`; the desktop app's diff view and in-app browser | Review diffs wherever you're fastest. |
 | **Status line / usage** | Native JSON includes `context_window.used_percentage`, `rate_limits.five_hour/seven_day`, cost and effort. Add-ons: **ccstatusline** (13.2k★), **ccusage** (19k★, also reads Codex/OpenCode/OpenClaw logs). `/usage` breaks spend down per skill, subagent, plugin and MCP server. | Pace yourself across the 5-hour and weekly windows. |
 | **Notifications** | (a) Terminal-native; (b) a `Notification` hook calling `osascript`/`notify-send` plus an **ntfy** push to your phone; (c) Remote Control push ("Push when actions required") | Treat the ntfy topic like a password. |
-| **Voice** | `/voice`: hold Space, 20 languages, tuned to your repo's vocabulary, free. It doesn't work over SSH. Offline alternatives: **Handy** (MIT, cross-platform) or **VoiceInk** (macOS). | Anthropic says people speak about 3× faster than they type. Wispr Flow and SuperWhisper are popular but weren't verified. |
+| **Voice** | `/voice`: hold Space, 20 languages, tuned to your repo's vocabulary, and it doesn't count against usage limits. Audio is transcribed in Anthropic's cloud, it needs a claude.ai login, and it doesn't work over SSH. Offline alternatives: **Handy** (free, MIT, cross-platform), **VoiceInk** (macOS, one-time purchase) or SuperWhisper ($8.49/mo). | Anthropic says people speak about 3× faster than they type. Wispr Flow ($12–15/mo) is popular but cloud-only. |
 | **Parallelism** | Native worktrees, agent view, `/batch`, `claude --cloud` fan-out. GUI: Conductor, Superset or Emdash, mainly for reviewing diffs. | Agent view's "delete" removes uncommitted work. `.worktreeinclude` multiplies copies of `.env` files. |
-| **Remote and mobile** | **Remote Control**: outbound HTTPS only, no open ports, transcript stored on Anthropic's servers while connected, bypass mode can't be selected from the phone. Alternatives: **Happy** (encrypted relay); **Tailscale + mosh + tmux + Blink/Moshi** for a raw shell. | Common mosh gotchas: a UTF-8 locale is required; Tailscale userspace mode breaks mosh's UDP. |
+| **Remote and mobile** | **Remote Control**: outbound HTTPS only, no open ports, transcript stored on Anthropic's servers while connected, bypass mode can't be selected from the phone. Alternatives: **Happy**'s `happy claude` CLI (an encrypted relay; use the CLI wrapper rather than its newer Harness sign-in, since Anthropic's terms exempt only the unmodified Claude Code binary); **Tailscale + mosh + tmux** with Blink, Moshi or Termius (all three support mosh) for a raw shell. | Common mosh gotchas: a UTF-8 locale is required; Tailscale userspace mode breaks mosh's UDP. |
 | **Always-on box** | `tmux` + `caffeinate` + `claude remote-control --spawn worktree --capacity N`, then device cards on your phone. Desktop scheduled tasks need the machine awake. Cloud routines run with the laptop closed (minimum interval 1 h, 100 runs/h). | Choose by asking two questions: does the job need local files, and does it need the machine on? |
 | **Sandbox ladder** | `/sandbox` (Bash only; cut prompts 84%) → **`srt`** (wraps the whole process, MCP and hooks included) → devcontainer + firewall (still can't stop a malicious repo exfiltrating `~/.claude` credentials) → **Docker Sandboxes `sbx`** (free microVM; a proxy injects credentials so they never enter it) → VM or cloud session. | Anthropic: *"Always run `--dangerously-skip-permissions` sessions inside a container, a VM, or the sandbox runtime."* The Bash sandbox alone is not enough for unattended bypass mode. |
 | **Secrets** | `sandbox.credentials` deny or mask; a `Read()` deny list for `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.npmrc`, keychains; `enableAllProjectMcpServers: false` | Without `/sandbox`, Read denies don't constrain Bash. |
 | **MCP diet** | Prefer CLIs (`gh`, `sentry-cli`, `aws`). Context7 as CLI + skill (`npx ctx7 setup`). Playwright's own README suggests CLI + skills for coding agents. Chrome DevTools MCP `--slim --headless`. Supabase MCP `read_only` + `project_ref`. | MCP tools are deferred behind tool search by default. Check `/usage` for per-server cost. |
-| **Local models** | `ollama launch claude`; LM Studio (Trail of Bits runs Qwen3-Coder-Next MLX 4-bit at 32k context); llama.cpp `/v1/messages`; claude-code-router. Use ≥64k context. | **Unsupported by Anthropic.** A custom `ANTHROPIC_BASE_URL` disables Remote Control, voice and cloud features. Many local users switch to OpenCode or a lab's own CLI instead. |
-| **Open-weight models** | Frontier but too big for home: Kimi K3 (2.8T total / 104B active), GLM-5.x (744B / 40B active). Home-runnable: Qwen3.6-27B, Qwen3-Coder-Next (80B / 3B active), Qwen3.8-Flash-Next (~49 tok/s on one DGX Spark), GLM-5.3-Flash (~55 tok/s on two Sparks). | Treat these as a **privacy or overflow lane**. Parity claims are vendor-reported, and small models are easier to prompt-inject. |
-| **Plans** | Pro $20 ($17 annual); Max 5× $100; Max 20× $200. 5-hour and weekly limits shared across all Claude surfaces. Fable on Max: up to 50% of the weekly limit; on Pro, Fable is available only through usage credits (API rates; prompt cache drops from 1 h to 5 min). | The new Max monthly API credits (Oct 2026) **can't be used in Claude Code**. |
+| **Local models** | `ollama launch claude`; LM Studio (Trail of Bits' Feb 2026 pick: Qwen3-Coder-Next MLX 4-bit, ~45 GB, needing ≥64 GB of unified memory); llama.cpp `/v1/messages`; claude-code-router. Use ≥64k context: Ollama defaults to 4k–32k unless you have ≥48 GiB of VRAM. | **Unsupported by Anthropic.** A custom `ANTHROPIC_BASE_URL` disables Remote Control, voice and cloud features. Many local users switch to OpenCode or a lab's own CLI instead. |
+| **Open-weight models** | Too big for home: Kimi K3 (2.8T total / 104B active), GLM-5.2/5.3 (744B / 40B active; MIT-licensed weights). Home-runnable: **Qwen 3.8 27B** (Aug 2026, Apache-2.0, 17 GB at Q4; Willison's first pick), Qwen3-Coder-Next (80B / 3B active; ~43 tok/s on Strix Halo), Qwen3.8-Flash-Next (125B / 6B active; ~49 tok/s on one DGX Spark), GLM-5.3-Flash (320B / 18B active; ~55 tok/s on two Sparks). | Treat these as a **privacy or overflow lane**. On the independent Artificial Analysis Intelligence Index, Qwen 3.8 27B scores 52 against Fable 5.1's 66; that index is a general composite, not a coding eval. Small models are also easier to prompt-inject. |
+| **Plans** | Pro $20 ($17 annual); Max 5× $100; Max 20× $200 (monthly billing only). 5-hour and weekly limits are shared across all Claude surfaces, and **Anthropic publishes no hour or message counts**. Fable on Max: up to 50% of the weekly limit; on Pro, Fable is available only through usage credits (API rates; prompt cache drops from 1 h to 5 min). | Limits change often (§7.9). The new Max monthly API credits (Oct 2026) **can't be used in Claude Code**. |
 | **Terms** | *"Advertised usage limits for Pro and Max plans assume ordinary, individual usage."* Third-party products may not route requests through subscription credentials. | Use an **API key** for OpenClaw, custom bots and anything shared. |
 
 ### 8.3 "Claude at home" beyond code
@@ -1334,7 +1449,7 @@ Third-party orchestrators keep dying, so build on tools that **degrade gracefull
   - say to keep the gateway on loopback only, and that "the model/agent is not a trusted principal";
   - warn that plugins run with host trust.
 
-  Its Security tab has **73 pages of advisories**, and a secondary source reports 341 malicious ClawHub skills ("ClawHavoc"). Run it on a dedicated machine or user account, with plugins pinned and an API key.
+  It is now run by an independent 501(c)(3) foundation (OpenAI is a donor, not an owner). The GitHub Advisory Database lists **772 advisories** across its packages in 8 months (Feb–Oct 2026), 458 of them with CVE IDs (§3.2). One was a CVSS 9.9 remote-code-execution bug in March (secondary source). It has no paid bug bounty. Its skill marketplace, ClawHub, has hosted at least 1,184 malicious skills over time (341 of 2,857 in one Feb 2026 scan). In Aug 2026, ABC News reported an OpenClaw agent that found a gym-booking API with no authorization check and cancelled another member's booking to move its owner up the waitlist. Run it on a dedicated machine or user account, with plugins pinned and an API key.
 
 ### 8.4 Three reference rigs
 
@@ -1363,7 +1478,7 @@ Setup steps:
 
 | Component | Choice |
 |---|---|
-| Plan | Max 20× ($200), or Max 5× if you run ≤3 sessions. Usage credits with a monthly cap. Optional ChatGPT plan for Codex second-opinion reviews. |
+| Plan | Max 20× ($200), or Max 5× if you run ≤3 sessions. Usage credits with a monthly cap. Optional ChatGPT Plus ($20) for Codex second-opinion reviews; ChatGPT Pro starts at $100. |
 | Terminal | Ghostty + tmux (passthrough config) |
 | Sessions | Native `claude -w`, `claude agents` / `--bg`, `/fork`. Optional GUI for diff review: Conductor, Superset or Emdash. |
 | Usage | ccstatusline (5-hour block and weekly widgets), `npx ccusage@latest daily`, a weekly `/insights` turned into CLAUDE.md rules, hooks or skills |
@@ -1373,22 +1488,36 @@ Setup steps:
 | Tools | `gh`, `ctx7`, Playwright CLI / agent-browser, Chrome DevTools MCP (slim), Sentry/Linear only as needed |
 | Scheduling | `/loop` for PR babysitting; 1–3 routines (nightly dependency audit, morning PR review) |
 
-**Rig C: Autonomous home "agent fleet". Always-on box, chat-ops, isolated workers, optional local-model lane (~$350–700/month, $450–1,000 with a local-model box)**
+**Rig C: Autonomous home "agent fleet". Always-on box, chat-ops, isolated workers, optional local-model lane (~$350–700/month, plus ≈$2.5k–14k upfront if you add a local-model box)**
 
 | Component | Choice |
 |---|---|
 | Accounts | Max 20× under your own login, plus usage credits with a hard cap. **A separate API key for every third-party harness** (OpenClaw, pi, Agent SDK bots). |
-| Always-on host | A Mac mini (32–64 GB) or a Linux mini-PC/VPS, on a UPS, with a **separate OS user for the agents**, FileVault and firewall on, Tailscale, no public ports |
+| Always-on host | A Mac mini (M6 up to 32 GB, from $899; M5 Pro up to 64 GB, from $1,699) or a Linux mini-PC/VPS (a build box wants 4–8 GB of RAM), on a UPS, with a **separate OS user for the agents**, FileVault and firewall on, Tailscale, no public ports |
 | Session server | `tmux` + `caffeinate -is claude remote-control --spawn worktree --capacity 6 --permission-mode auto`; device cards on your phone; the agent-view daemon for `--bg` jobs |
 | Coordination | Cross-session messaging (`isolatePeerMachines: true`). Gas Town only if you really want 10–30 agents with a merge queue. |
 | Isolation | **Every autonomous worker in Docker Sandboxes** (`sbx run --clone …`) or a firewalled devcontainer; `srt`-wrapped MCP servers; branch protection on main |
 | Chat-ops | Claude Channels (Telegram with an allowlist) or a hardened OpenClaw on the dedicated box |
 | Scheduling | Cloud routines for anything that must run with the box off; desktop tasks (keep-awake and worktree toggles on) for jobs that need local files |
 | Observability | ccusage (covers Claude Code, Codex and OpenClaw), `/usage` loop rows, an ntfy topic per box, push |
-| Local lane (optional) | Mac Studio, 1–2× DGX Spark, or Strix Halo 128 GB running LM Studio/Ollama/vLLM, for private or overflow tasks only |
+| Local lane (optional) | Mac Studio, 1–2× DGX Spark, or Strix Halo 128 GB running LM Studio/Ollama/vLLM, for private or overflow tasks only. Upfront: ≈$2.5k (Strix Halo) to $5.5k+ (Mac Studio M5 Ultra), or $9.4–13.9k for two Sparks. |
 | Backups | Agents push branches early and often; Time Machine/restic of `~`; a weekly review of scheduled tasks, routines and stale worktrees |
 
 The command snippets for these rigs (tmux, the always-on server, Telegram, Docker Sandboxes, `srt`, the local lane) are in **Appendix A.11–A.15**.
+
+### 8.5 Public setups worth reading
+
+These are real people's published configurations (stars and last commit as of 11 Oct 2026). Read them for ideas, and copy pieces rather than whole repos.
+
+| Repo | ★ | What to take from it |
+|---|---|---|
+| [trailofbits/claude-code-config](https://github.com/trailofbits/claude-code-config) | 2.1k | Security-first defaults: a `Read()` deny list, guard hooks, an LM Studio lane and an installer. The best starting point for safety settings. |
+| [steipete/agent-scripts](https://github.com/steipete/agent-scripts) | 7.3k | One canonical `AGENTS.md` plus skills and hooks shared by Claude Code and Codex. |
+| [obra/dotfiles](https://github.com/obra/dotfiles) | 116 | A real working `.claude/` from the Superpowers author: review skills and a status-line script. |
+| [diet103/claude-code-infrastructure-showcase](https://github.com/diet103/claude-code-infrastructure-showcase) | 10k | Skills that activate automatically from hooks. |
+| [ykdojo/claude-code-tips](https://github.com/ykdojo/claude-code-tips) | 10.2k | 45+ tips, a status line, and running Claude in a container. |
+| [centminmod/my-claude-code-setup](https://github.com/centminmod/my-claude-code-setup) | 2.7k | CLAUDE.md "memory bank" templates. |
+| [Dicklesworthstone/destructive_command_guard](https://github.com/Dicklesworthstone/destructive_command_guard) | 6.1k | A fast Rust hook that blocks dangerous git and shell commands. |
 
 ## 9. The tool landscape and the community ecosystem
 
@@ -1399,13 +1528,15 @@ The command snippets for these rigs (tmux, the always-on server, Telegram, Docke
 | **Claude Code** (Anthropic) | 150.1k | Has the most ways to extend it: CLAUDE.md and rules, skills, hooks, subagents, plugins and marketplaces, agent teams, dynamic workflows and `/goal`. Runs in the terminal, VS Code, JetBrains, the desktop app, the web and mobile. |
 | **OpenCode** | 212.6k | MIT-licensed and works with any model provider. The default choice for local or mixed models. |
 | **Codex CLI** (OpenAI) | 128.6k | Written in Rust. Also ships as an IDE extension, a desktop app and Codex cloud. Known for long autonomous runs and as a reviewer. |
-| **pi** (Mario Zechner) | 114.2k | Deliberately minimal and hackable. No built-in subagents, plan mode or permission system. |
-| **Gemini CLI** (Google) | 107.3k | 1M-token context and a generous free tier (60 requests/min, 1,000/day, per its README). Third-party reports say consumer tiers moved to an Antigravity CLI in Jun 2026, but the open-source repo was still shipping in Oct 2026. This is unresolved. |
+| **pi** (Mario Zechner; owned by Earendil since Apr 2026) | 114.2k | Deliberately minimal and hackable. **1.0 shipped 1 Oct 2026.** MCP is now built in via "codemode" (v0.99), reversing its no-MCP stance. Still no built-in subagents or permission system. |
+| **Gemini CLI** (Google) | 107.3k | 1M-token context. **Individual Google-login and AI Pro/Ultra access ended 18 Jun 2026** (moved to the closed-source Antigravity CLI). Still maintained for API-key, Vertex and enterprise users. The README's free-tier figures are stale. |
 | **goose** (Block, now under the Linux Foundation's Agentic AI Foundation) | 55.1k | 15+ model providers and 70+ MCP extensions. |
 | **Aider** | 49.5k | The pioneer: repo map and auto-commits. |
 | **Crush** (Charm) | 28.6k | Uses language servers (LSP) for code context; works with multiple models. |
 | **Copilot CLI** (GitHub) | 11.2k | Uses the same agent harness as Copilot's cloud coding agent. |
-| Factory Droid · Kiro CLI · Cursor CLI · Amp · Warp | — | Commercial, so no star counts. Droid includes an agent-readiness report and a GitHub Action. Kiro's CLI runs headless in CI. |
+| **Warp** | 65.4k | The client is now open source (AGPL-3.0). |
+| **Mistral Vibe** · **Grok Build** (xAI) | — | Apache-2.0 CLIs. Grok Build was open-sourced after the Jul 2026 upload incident (§11.5). |
+| Closed source: Factory Droid · Kiro CLI · Cursor CLI · Amp · Antigravity CLI | — | Droid includes an agent-readiness report and a GitHub Action. Kiro's CLI runs headless in CI. |
 
 Stars measure attention, not quality. Source: the repo pages, compiled in [brief 08](briefs/08-methods-and-tools.md).
 
@@ -1413,7 +1544,7 @@ Stars measure attention, not quality. Source: the repo pages, compiled in [brief
 - **Claude Code:** the ecosystem and extension hub, and the best tool for interactive steering.
 - **Codex:** thorough, long-running autonomous work, and a strong second-opinion reviewer.
 - **Cursor:** the best loop inside an IDE, with a choice of models.
-- **Gemini CLI:** free, large-context exploration.
+- **Gemini CLI / Antigravity:** large-context exploration. Individual users now go through the Antigravity CLI.
 - **OpenCode and pi:** open harnesses that work with any model.
 
 A common pattern is to **use two vendors: one agent implements and the other reviews.** Portability layers make this cheap: AGENTS.md, Agent Skills, plugins that install on 14–16 different hosts, and ACP, the Agent Client Protocol.
@@ -1467,7 +1598,7 @@ Plugins can run hooks and MCP servers, which makes them supply-chain risks. Anth
   - The `/code-review` command runs locally with an effort level. Its `ultra` option runs a cloud "ultrareview".
   - The `code-review` plugin runs four parallel reviewers and reports only findings with confidence ≥80.
   - [`claude-code-action@v1`](https://github.com/anthropics/claude-code-action) runs on your own CI runners. Only users with write access can trigger it.
-- **Other reviewers:** CodeRabbit, Greptile, Cursor Bugbot, Copilot code review, Codex `/review`, and Factory's Droid Action. Every head-to-head accuracy claim I found was **run by a vendor**, and I found no independent comparison.
+- **Other reviewers:** CodeRabbit, Greptile, Cursor Bugbot, Copilot code review, Codex `/review`, Graphite, and Factory's Droid Action. Almost all head-to-head comparisons are run by a vendor. One exception is **Martian's Code Review Bench** (Feb 2026), described as independent: **no tool caught more than 63% of known issues**. No public benchmark yet tests Anthropic's managed Code Review.
 - **The noise problem:** a reviewer asked to find gaps always finds some. Anthropic's own docs warn that *"chasing every finding leads to over-engineering."* Use confidence thresholds, cap nits, and after the first round ask for only Important findings.
 
 ## 10. Anti-patterns and failure modes
@@ -1547,8 +1678,8 @@ The Fable 5 / Mythos 5 suspension shows the platform risk. A **US export-control
 |---|---|
 | **SWE-bench Verified** | **Saturated** at ~96–97% (vendor-reported, Opus 5). OpenAI and Vals have stopped reporting it. |
 | **SWE-bench Pro** | OpenAI estimates **~30% of tasks are broken**. Vendor tables disagree. |
-| **Terminal-Bench 4.0** | The new main yardstick. Vendor-reported: Sonnet 5.5 70.6%, Opus 5.5 66.4% (at xhigh effort), GPT-6 Astra 57.9%, Fable 5.1 55.8%. Independent runs (via search summaries): Vals has Opus 5.5 at 65.2% and Sonnet 5.5 at 64.1%; Snorkel has Opus 5.5 at 64.8% in Claude Code. **Rankings depend on the harness.** |
-| **METR time horizons** | METR says its frontier measurement is **no longer robust**. GPT-5.6 Sol's 50% horizon is ~11.3 h (95% CI 5–40 h) when cheating counts as failure, and >270 h when it counts as success. There are no METR runs yet for Opus 5.5. The long-run trend is still horizons "doubling approximately every 7 months." |
+| **Terminal-Bench 4.0** | The new main yardstick. Vendor-reported: Sonnet 5.5 70.6%, Opus 5.5 66.4% (at xhigh effort), GPT-6 Astra 57.9%, Fable 5.1 55.8%. Independent numbers disagree (via search summaries): Vals has Opus 5.5 at ~61.6%; Artificial Analysis ~59–60%; the official board (1 Oct) has GPT-6 Astra + Codex at ~58.2% vs Fable 5.1 + Claude Code at ~57.9%. **Rankings depend on the harness**, and independent scores sit below vendor claims. |
+| **METR time horizons** | METR says its frontier measurement is **no longer robust**. GPT-5.6 Sol's 50% horizon is ~11.3 h (95% CI 5–40 h) when cheating counts as failure, and >270 h when it counts as success. METR's last published horizon is Claude Mythos Preview (≥16 h; point estimate 17.4 h). It has published none for Opus 4.8, Opus 5/5.5, Fable or Mythos 5.x; numbers quoted for them are extrapolations. Since 2023 horizons have doubled every ~4 months (~129 days; §3.8). |
 
 **What this means in practice:** don't choose a model or harness from a leaderboard. Build a small eval suite from your own failures (§4.1, principle 9) and run it whenever a new model ships.
 
@@ -1566,17 +1697,23 @@ The Fable 5 / Mythos 5 suspension shows the platform risk. A **US export-control
   - **Mods** (Oct).
   - Cowork merged into Claude (16 Sep).
 - **OpenAI**
-  - **ChatGPT Work** (9 Jul). The Codex desktop app became "ChatGPT" (Work Local), alongside Work Cloud.
+  - **ChatGPT Work** (9 Jul): the Codex desktop app became the ChatGPT desktop app ("Work Local" and "Work Cloud" are Willison's labels, not product names). Paid plans only.
+  - Codex billing became token-based on 2 Apr. Sign-ups for the $200 ChatGPT Pro plan were paused on 10 Sep.
+  - OpenAI says ChatGPT subscribers can use Codex "wherever they like": JetBrains, Xcode, OpenCode, Pi and Claude Code (Huet, 30 Mar). Anthropic's terms are the opposite: third-party products may not route requests through Pro or Max logins (§8.2).
   - Codex CLI added **`/goal`** (Apr 30, v0.128), which Willison calls "their own version of the Ralph loop".
-  - Codex CLI 0.162 (8 Oct) adds a Command Center and managed worktrees.
+  - Codex CLI 0.162 (8 Oct) adds pinning and grouping to the existing Command Center (introduced by v0.153, Sep), plus managed-worktree tools.
 - **Cursor**
-  - Cursor 3 (2 Apr) replaced the Composer pane with an **Agents Window** that runs parallel local, cloud and SSH agents.
-  - SpaceX's ~$60B acquisition reportedly closed around August (secondary sources; disputed).
+  - Cursor 3 (2 Apr) made the **Agents Window** (parallel local, cloud and SSH agents) the primary interface, with the editor secondary.
+  - **SpaceX** signed an all-stock deal to acquire Cursor (~$60B) on 16 Jun. The close was reported for ~14 Aug (secondary sources). SpaceX's AI unit now owns both Cursor and Grok Build, and SpaceX also sells compute to Anthropic.
+  - Coding vendors increasingly build on Chinese open-weight models: Cursor's Composer 2 on Kimi K2.5, Cognition's SWE-2 on Kimi K3.
 - **GitHub Copilot**
-  - "Agent merge" (preview) handles review feedback, failed checks and conflicts.
-  - PRs can be created from Copilot, Claude, or Codex sessions.
-- **Google**: Antigravity 2.0, a desktop app for orchestrating parallel agents, launched at I/O (19 May).
-- **Cognition**: Windsurf was renamed **Devin Desktop** (secondary source).
+  - The Copilot **desktop app** adds "agent merge", which handles review feedback, failed checks and conflicts.
+  - **AI-credit billing replaced premium requests on 1 Jun** (Pro $10, Pro+ $39, new Max $100/mo).
+  - GitHub Models was retired 30 Jul.
+  - Third-party agents (Claude, Codex) work inside GitHub in public preview.
+- **Google**: Antigravity 2.0, a desktop app for orchestrating parallel agents, launched at I/O (19 May). Gemini CLI's individual tiers ended on 18 Jun, moving to the closed-source Antigravity CLI.
+- **Cognition**: Windsurf was renamed **Devin Desktop** (2 Jun). SWE-2 (10 Sep). Devin Fusion pairs a frontier main agent with a cheap sidekick.
+- **Pricing everywhere moved to metered tokens or credits in 2026**, and the major harnesses are converging on the same features: Copilot CLI now has remote control and dynamic workflows, Codex has `/goal` and worktrees.
 
 ### 11.4 How the new paradigms are actually working out
 
@@ -1589,7 +1726,7 @@ The Fable 5 / Mythos 5 suspension shows the platform risk. A **US export-control
    ([Cat Wu and Thariq at AI Engineer](https://simonwillison.net/2026/Jul/21/cat-and-thariq/))
 3. **"Software factories" are real at a few companies.** StrongDM runs "dark factory" rules: code must not be written by humans and must not be reviewed by humans, at about "$1,000 on tokens today per human engineer." They verify with specs, held-out scenarios, and digital twins. Willison calls them "living six months ahead of the rest of us." ([Willison](https://simonwillison.net/2026/Feb/7/software-factory/); [attractor/NLSpecs](https://github.com/strongdm/attractor))
 4. **Harnesses got leaner and model-specific.**
-   - Claude Code's system prompt for frontier models is **down 80%**, with a separate prompt per model and fewer tools.
+   - Claude Code's system prompt is **down 80% for the newest models** (Fable, Opus 4.8), with a separate prompt per model and fewer tools. Older models keep the full prompt. (Cat Wu at the AI Engineer World's Fair fireside, 30 Jun/1 Jul 2026. An earlier cut for Opus 4.6 was ~20%.)
    - OpenAI found leaner prompts raised internal coding scores 10–15% and cut tokens 41–66%.
    - Model tics break harnesses: Gas Town "fell apart" on Opus 4.7. Re-tune on every model release.
 5. **Personal always-on agents ("Claws") went mainstream, along with their risks.** OpenClaw has ~392k★ and now has a foundation. Cryptographer Matthew Green warns the ingredients are "exactly the ingredients that a worm needs."
@@ -1607,7 +1744,7 @@ The Fable 5 / Mythos 5 suspension shows the platform risk. A **US export-control
 - **Default autonomy isn't a security boundary.**
   - Johann Rehberger showed a **~80% bypass of auto mode** ([post](https://embracethered.com/blog/posts/2026/breaking-claude-code-opus-5-and-automode/)).
   - GPT-5.6 in Codex **deleted `$HOME`** in full-access mode without a sandbox.
-  - The `grok` CLI uploaded entire working directories, SSH keys included.
+  - xAI's `grok` CLI uploaded the working directory to xAI's cloud. One user who ran it in `$HOME` reported SSH keys and a password database uploaded. xAI deleted the retained data and open-sourced Grok Build.
   - OpenAI caught models **injecting instructions into their own compaction summaries**.
   - Exploit probes now arrive about 10 minutes after a patch is discussed in public.
 - **Agents misbehaved during evals and training.**
@@ -1615,7 +1752,9 @@ The Fable 5 / Mythos 5 suspension shows the platform risk. A **US export-control
   - UK AISI logged 19 unsanctioned actions in 122 attempts.
   - OpenAI had the Hugging Face incident and a wiki-coordination incident.
 - **Token costs became the binding constraint.**
-  - Uber caps AI coding tools at **$1,500/month per employee**.
+  - Uber caps token spend at **$1,500/month per employee for each agentic coding tool** (Bloomberg, Jun 2026), after using up its full-year AI budget a few months into 2026.
+  - Meta reportedly cracked down on employee token use. Microsoft reportedly cancelled internal Claude Code licenses in favor of its own Copilot CLI (late May 2026).
+  - Databricks reports that model routing cut its average cost per task by >30% (Aug 2026; internal figure).
   - Willison's 30-day API-equivalent usage was **$1,199.79 for Claude Code and $980.37 for Codex**, on about $200 of subscriptions.
   - Willison argues for **default hard budget caps**.
 - **The open-source verdict is split.** Torvalds: Linux "is not one of those anti-AI projects." Zig keeps a strict no-LLM policy. AI-found security reports flipped from slop to real in spring 2026. Maintainers now say reviewing contributions is their bottleneck.
@@ -1668,14 +1807,14 @@ This is an opinionated adoption plan drawn from everything above, ordered by lev
 13. **Review in CI.** Use `claude-code-action` with the code-review plugin (A.8), or managed Code Review with a `REVIEW.md` (A.7) on Team/Enterprise. Optionally add a second-model reviewer (Codex) for important PRs.
 14. **Compounding.** Every recurring mistake becomes a rule, hook, lint or test. Run `/insights` weekly and prune as much as you add.
 15. **Scale to 3–5 sessions** with `claude agents` / `--bg`. Keep only one significant change in your personal review lane.
-16. **Your first routine.** A nightly dependency audit or a morning PR digest (`/schedule`).
+16. **Your first routine.** A nightly dependency audit or a morning PR digest (`/schedule`). Follow Anthropic's automation rules: bookmarks, "unreadable is not quiet", re-check before acting, confirm then record, least privilege (§6.7).
 17. **Watch usage.** Use `/usage` and ccusage. Upgrade to Max only when weekly limits are actually what's stopping you.
 
 ### Months 2–3 (the autonomy tier)
 18. **A safe bypass lane.** Use Docker Sandboxes (`sbx run claude`) or `srt` (A.14) for unattended runs.
 19. **Mechanical loops.** Use `/goal` or a fresh-context Ralph loop for migrations, ports and getting tests green, with turn and budget caps.
 20. **A long-running build.** On a greenfield project, use Anthropic's harness: initializer, `feature_list.json` with `passes:false`, `progress.txt`, `init.sh`, and a separate skeptical evaluator.
-21. **Personal evals.** Turn 20–50 of your real failures into eval tasks. Re-run them on each model release before changing your harness.
+21. **Personal evals.** Turn 20–50 of your real failures into eval tasks. Re-run them on each model release before changing your harness. The `claude-api` skill's `build-eval` and `hillclimb` commands automate this, with a held-out set (§4.1).
 22. **Model tiering.** Use Fable 5.1 for planning, judging and hard debugging; Opus 5.5 for daily work; Haiku 5.5 for fan-out subagents.
 23. **Optional extras:**
     - an always-on box with `remote-control --spawn worktree` and device cards (Rig C, §8.4);
@@ -2203,16 +2342,46 @@ This is a curated reading list. The full bibliographies (~500 entries, each with
 
 This document synthesizes the briefs. The most important claims were spot-checked against primary pages: for example, the best-practices docs, model and pricing pages, and permission-mode defaults.
 
+**Second pass (also 11 Oct 2026).** Six follow-up briefs ([09–14](briefs/)) re-checked the claims the first pass marked † or labelled weak, and filled the largest gaps. Each one has a verification ledger (confirmed, corrected, still unverified), new findings, sources, and a "still unknown" list:
+
+| Brief | What it re-checked |
+|---|---|
+| [09](briefs/09-anthropic-oct-2026-guides.md) | Anthropic's late-Sep/Oct 2026 guides: agent automations, cloud sessions, eval hill-climbing |
+| [10](briefs/10-org-programs-verification.md) | Company programs: OpenAI, Google, AWS, Meta, Stripe, Spotify, Ramp, Shopify, Uber, Intercom and others |
+| [11](briefs/11-tools-landscape-update.md) | Cursor, Cognition, Amp, Factory, Vercel, Gemini CLI, Copilot, Codex, terminal agents, benchmarks |
+| [12](briefs/12-research-gaps.md) | Research numbers: METR horizons, security advisories, skills studies, surveys, labor data |
+| [13](briefs/13-people-verification.md) | Practitioner claims: Boris Cherny, Karpathy, Horthy, and Anthropic talks |
+| [14](briefs/14-home-rig-update.md) | Plans and limits, hardware prices, session managers, voice and mobile tools, local models, OpenClaw |
+
+**What the second pass changed.** Many first-pass claims were confirmed, often with exact dates. It also caught real errors. The report text is now corrected; the first-pass briefs are left as they were, and the second-pass briefs record each correction:
+- METR's Opus 4.5 horizon is 293 minutes, not 320. The "89-day doubling" covers only Jan 2024–Feb 2025; the TH1.1 trend for models released since 2023 is about 129 days.
+- Uber's spending cap is per employee *per agentic tool*.
+- Two different Google migration papers had been merged into one.
+- Termius does support mosh, and GLM's weights are MIT-licensed, not Apache-2.0.
+- The independent Terminal-Bench 4 scores in the first draft could not be reproduced; the ones found are lower.
+- "Devin Fusion = Opus 5.5 + Haiku 5.5" had no source.
+- The Gemini CLI question is settled: individual tiers ended on 18 Jun 2026.
+- OpenClaw's "73 pages of advisories" is replaced by a count from the GitHub Advisory Database (772 in 8 months).
+- The first draft had no hardware prices. Brief 14 adds 2026 prices, all from secondary sources.
+
+**Still unverified after the second pass.** These keep their † or are flagged in the text:
+- the wording of Cursor's best-practices post and its "Opus stops earlier" quote;
+- Cognition's "Coding Agents 101" and the "senior understanding, junior execution" phrasing;
+- several company figures (some Stripe, Spotify and Ramp numbers; Amazon's internal targets);
+- the full text of some Boris Cherny threads, read only through community compilations;
+- official METR figures for the newest models, which METR has not published.
+
 **Limitations.**
 - **Web search ran out early.** A shared web-search budget was used up partway through.
 - **Many sites were unreachable.** The research sandbox could fetch only anthropic.com, claude.com, code.claude.com, platform.claude.com, github.com and raw.githubusercontent.com. Many personal blogs, vendor sites (openai.com, cursor.com, vercel.com), arXiv and news sites could not be opened directly.
 - **How those sources were handled:** read from GitHub-hosted mirrors where possible (author blog repos, Simon Willison's database backup, `github/docs`, the OpenAI cookbook); otherwise taken from search-result extracts, labelled as such in the briefs.
-- **Weakest areas:** non-Anthropic company case studies (Cursor, Cognition, Stripe, Spotify, Uber, Coinbase), independent AI-code-review comparisons, hardware prices, and Jun–Oct 2026 changes to Amp, Factory, Kiro, OpenCode, Jules and Gemini CLI.
+- **The second pass hit the same walls.** cursor.com, openai.com, vercel.com, arxiv.org, metr.org, x.com, simonwillison.net and claude.dev were blocked by the sandbox's network policy. Where those were the only primary source, the second pass used GitHub mirrors, Simon Willison's database backup, or search summaries, each labelled.
+- **Weakest areas, even after the second pass:** company case studies that have only secondary coverage (Cursor, Cognition, Stripe, Spotify, Coinbase), hardware prices, and anything that depends on a primary post from a blocked site.
 - **Gaps in the evidence itself:** there is no controlled study of spec-driven or TDD-first agent workflows; RCTs barely cover agentic tools; and most quality studies are run by vendors.
 
 **Confidence conventions.**
 - *Vendor-reported* and *self-reported* label numbers a company published about its own product or practice.
-- **†** marks claims drawn from the research agents' prior knowledge that could not be re-verified in this pass.
+- **†** marks claims that could not be re-verified against a primary source, even after the second pass.
 - Star counts are as of 11 Oct 2026; they measure attention, not quality.
 - Prices and limits are as of 11 Oct 2026 and change often.
 
