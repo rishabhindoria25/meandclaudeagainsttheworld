@@ -1,6 +1,6 @@
 # Research briefs (raw, sourced notes)
 
-These are the research briefs behind [the main report](../README.md), all compiled on 11 Oct 2026: eight first-pass research tracks (01–08) and six second-pass verification briefs (09–14).
+These are the research briefs behind [the main report](../README.md), all compiled on 11 Oct 2026: eight first-pass research tracks (01–08), six second-pass verification briefs (09–14), and a third-pass check (15).
 
 Each brief has the same layout:
 - top takeaways
@@ -36,3 +36,9 @@ Some sites couldn't be reached during research, so each brief opens with a metho
 | [12 — Research gaps](12-research-gaps.md) | METR time horizons (TH1.1), security advisories, skills and context-file studies, multi-agent papers, surveys and labor data |
 | [13 — People](13-people-verification.md) | Boris Cherny's posts and talks, Karpathy, Horthy's QRSPI, and other practitioner claims |
 | [14 — Home rig update](14-home-rig-update.md) | Plans and limits, 2026 hardware prices, session managers, voice and mobile tools, local models, OpenClaw security, public setup repos |
+
+**Third pass.** Run from an unrestricted network, so it could open the sites the first two passes could not. It has the same ledger layout, plus a link check and the results of running the configs.
+
+| Brief | Scope |
+|---|---|
+| [15 — Third-pass check](15-third-pass-check.md) | 33 claims re-checked against primary pages, 46 Claude Code details, a check of all 1,028 links, the Appendix A configs and the macOS sandbox actually run, and the edits made to the report |
