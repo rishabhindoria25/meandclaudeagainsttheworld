@@ -158,7 +158,7 @@ Four eras overlap. Each one changed what "a good setup" means.
   - Hashimoto's "My AI Adoption Journey".
   - StrongDM software factory.
   - OpenAI "harness engineering".
-  - ETH study finding that context files reduce success.
+  - ETH study on context files (revised in Sep 2026: no reliable success gain, 20%+ higher cost).
   - Willison's **"Agentic Engineering Patterns"**.
   - Remote Control (Feb 24); auto memory; `/batch`.
 - **Mar:**
